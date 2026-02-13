@@ -275,15 +275,26 @@ class TestGenerateNotes:
 
     @staticmethod
     def _mock_chat_response(content: str) -> dict:
-        """Build a fake ollama chat response dict."""
+        """Build a fake ollama chat response dict (non-streaming)."""
         return {"message": {"content": content}}
+
+    @staticmethod
+    def _mock_streaming_response(content: str) -> list[dict]:
+        """Build a fake ollama streaming chat response (list of chunks)."""
+        # Simulate streaming: split content into word-level tokens
+        tokens = content.split(" ")
+        chunks = []
+        for i, token in enumerate(tokens):
+            prefix = " " if i > 0 else ""
+            chunks.append({"message": {"content": prefix + token}})
+        return chunks
 
     @patch("ollama.Client")
     def test_success_with_mocked_ollama(self, MockClient, sample_transcript):
         """Test 11: generate_notes returns valid output from mocked ollama."""
         valid_json = json.dumps(_make_valid_dict())
         mock_client = MagicMock()
-        mock_client.chat.return_value = self._mock_chat_response(valid_json)
+        mock_client.chat.return_value = self._mock_streaming_response(valid_json)
         MockClient.return_value = mock_client
 
         result = generate_notes(sample_transcript)
@@ -302,7 +313,7 @@ class TestGenerateNotes:
         """Test 12: generate_notes falls back to regex extraction on bad JSON."""
         bad_content = "Here are the notes:\n## Summary\nSome notes about the video."
         mock_client = MagicMock()
-        mock_client.chat.return_value = self._mock_chat_response(bad_content)
+        mock_client.chat.return_value = self._mock_streaming_response(bad_content)
         MockClient.return_value = mock_client
 
         result = generate_notes(sample_transcript)

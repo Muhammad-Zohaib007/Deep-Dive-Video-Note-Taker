@@ -7,6 +7,7 @@ then extracts audio as 16kHz mono WAV using FFmpeg.
 from __future__ import annotations
 
 import re
+import shutil
 import subprocess
 import uuid
 from pathlib import Path
@@ -22,6 +23,18 @@ from notetaker.utils.validators import (
 )
 
 logger = get_logger("audio")
+
+
+def _get_js_runtime_args() -> list[str]:
+    """Return yt-dlp --js-runtimes args if a supported JS runtime is available.
+
+    Modern yt-dlp (2025+) requires a JavaScript runtime for YouTube extraction.
+    We check for nodejs first (most common on dev machines), then deno.
+    """
+    for runtime in ("node", "deno"):
+        if shutil.which(runtime):
+            return ["--js-runtimes", runtime.replace("node", "nodejs")]
+    return []
 
 
 def _generate_video_id(source: str) -> str:
@@ -70,6 +83,7 @@ def _download_youtube_audio(
         "--no-overwrites",
         "--quiet",
         "--progress",
+        *_get_js_runtime_args(),
         url,
     ]
 
@@ -104,6 +118,7 @@ def _get_youtube_title(url: str) -> str:
         "--no-playlist",
         "--get-title",
         "--quiet",
+        *_get_js_runtime_args(),
         url,
     ]
     try:

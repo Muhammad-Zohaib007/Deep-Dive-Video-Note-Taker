@@ -275,9 +275,9 @@ class TestAnswerQuestion:
         mock_retrieve.return_value = chromadb_results
 
         mock_client_instance = MagicMock()
-        mock_client_instance.chat.return_value = {
-            "message": {"content": "Python is great [00:00]."}
-        }
+        mock_client_instance.chat.return_value = [
+            {"message": {"content": "Python is great [00:00]."}}
+        ]
 
         with patch("notetaker.pipeline.qa.ollama_sdk", create=True) as mock_ollama:
             mock_ollama.Client.return_value = mock_client_instance
@@ -343,9 +343,9 @@ class TestAnswerQuestion:
         mock_retrieve.return_value = chromadb_results
 
         mock_client_instance = MagicMock()
-        mock_client_instance.chat.return_value = {
-            "message": {"content": "Answer."}
-        }
+        mock_client_instance.chat.return_value = [
+            {"message": {"content": "Answer."}}
+        ]
 
         with patch("notetaker.pipeline.qa.ollama_sdk", create=True) as mock_ollama:
             mock_ollama.Client.return_value = mock_client_instance

@@ -232,7 +232,7 @@ class PipelineRunner:
                     base_url=self.config.get("ollama.base_url", "http://localhost:11434"),
                     temperature=self.config.get("ollama.temperature", 0.3),
                     max_tokens=self.config.get("ollama.max_tokens", 2048),
-                    timeout=self.config.get("ollama.timeout_seconds", 300),
+                    timeout=self.config.get("ollama.timeout_seconds", 900),
                 )
                 save_notes(output, notes_path)
                 save_cached_notes(transcript, self.ollama_model, output, video_dir)

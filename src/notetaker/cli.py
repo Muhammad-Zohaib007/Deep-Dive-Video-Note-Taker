@@ -11,7 +11,18 @@ Commands:
 from __future__ import annotations
 
 import json
+import os
+import sys
 from typing import Optional
+
+# Force UTF-8 on Windows to avoid cp1252 UnicodeEncodeError with Rich
+# spinner characters (braille patterns). Must run before Rich imports.
+if sys.platform == "win32":
+    os.environ.setdefault("PYTHONUTF8", "1")
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8")
+    if hasattr(sys.stderr, "reconfigure"):
+        sys.stderr.reconfigure(encoding="utf-8")
 
 import typer
 from rich import print as rprint

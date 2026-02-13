@@ -228,7 +228,9 @@ def answer_question(
     try:
         client = ollama_sdk.Client(host=ollama_base_url, timeout=timeout)
 
-        response = client.chat(
+        # Use streaming to avoid read-timeout on slow CPU inference
+        chunks: list[str] = []
+        for part in client.chat(
             model=ollama_model,
             messages=[
                 {"role": "system", "content": RAG_SYSTEM_PROMPT},
@@ -238,9 +240,11 @@ def answer_question(
                 "temperature": 0.2,
                 "num_predict": 512,
             },
-        )
+            stream=True,
+        ):
+            chunks.append(part["message"]["content"])
 
-        answer = response["message"]["content"]
+        answer = "".join(chunks)
         elapsed = time.time() - start_time
         logger.info(f"Q&A complete in {elapsed:.1f}s")
 

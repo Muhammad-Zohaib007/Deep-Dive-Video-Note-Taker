@@ -147,14 +147,25 @@ def _dict_to_generated_output(data: dict[str, Any]) -> GeneratedOutput:
     notes_data = data.get("structured_notes", {})
     sections = []
     for s in notes_data.get("sections", []):
+        key_points = s.get("key_points", [])
+        # Ensure key_points is a flat list of strings
+        if isinstance(key_points, list):
+            key_points = [str(p) for p in key_points if p]
+        else:
+            key_points = [str(key_points)]
         sections.append(NoteSection(
-            heading=s.get("heading", ""),
-            key_points=s.get("key_points", []),
+            heading=str(s.get("heading", "")),
+            key_points=key_points,
         ))
+
+    # LLMs sometimes return summary as a list of bullet points — normalise to string
+    raw_summary = notes_data.get("summary", "")
+    if isinstance(raw_summary, list):
+        raw_summary = " ".join(str(item) for item in raw_summary)
 
     structured_notes = StructuredNotes(
         title=notes_data.get("title", "Video Notes"),
-        summary=notes_data.get("summary", ""),
+        summary=raw_summary,
         sections=sections,
     )
 
@@ -188,7 +199,7 @@ def generate_notes(
     base_url: str = "http://localhost:11434",
     temperature: float = 0.3,
     max_tokens: int = 2048,
-    timeout: int = 300,
+    timeout: int = 900,
 ) -> GeneratedOutput:
     """Generate structured notes from a transcript using Ollama.
 
@@ -214,7 +225,11 @@ def generate_notes(
     try:
         client = ollama_sdk.Client(host=base_url, timeout=timeout)
 
-        response = client.chat(
+        # Use streaming to avoid read-timeout on slow CPU inference.
+        # Each chunk keeps the connection alive; timeout only applies
+        # to the gap between successive chunks (always short).
+        chunks: list[str] = []
+        for part in client.chat(
             model=model,
             messages=[
                 {"role": "system", "content": SYSTEM_PROMPT},
@@ -224,9 +239,12 @@ def generate_notes(
                 "temperature": temperature,
                 "num_predict": max_tokens,
             },
-        )
+            stream=True,
+        ):
+            token = part["message"]["content"]
+            chunks.append(token)
 
-        raw_text = response["message"]["content"]
+        raw_text = "".join(chunks)
         elapsed = time.time() - start_time
         logger.info(f"LLM response received in {elapsed:.1f}s")
 

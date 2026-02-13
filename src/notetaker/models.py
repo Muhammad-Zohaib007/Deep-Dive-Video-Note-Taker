@@ -47,6 +47,8 @@ class OutputFormat(str, Enum):
     """Supported output export formats."""
     MARKDOWN = "markdown"
     JSON = "json"
+    OBSIDIAN = "obsidian"
+    NOTION = "notion"
 
 
 # ---------------------------------------------------------------------------

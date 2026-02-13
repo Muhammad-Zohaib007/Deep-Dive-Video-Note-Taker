@@ -61,3 +61,24 @@ cache:
   enabled: true
   transcript_cache: true
   llm_output_cache: true
+
+# Custom Prompt Templates
+# Set a file path to load a custom system prompt for note generation.
+# The file should contain plain text that will replace the default system prompt.
+# Set to null or omit to use the built-in prompt.
+prompts:
+  generation_template: null  # e.g., "~/.notetaker/prompts/my_prompt.txt"
+  qa_template: null          # e.g., "~/.notetaker/prompts/my_qa_prompt.txt"
+
+# Notion Export (optional)
+# Requires 'notion-client' package: pip install notion-client
+notion:
+  token: null           # Notion integration token (secret_xxx)
+  database_id: null     # Target database ID
+  parent_page_id: null  # Or parent page ID
+
+# Export defaults
+export:
+  default_format: "json"           # json | markdown | obsidian
+  obsidian_vault_path: null        # Path to Obsidian vault for auto-export
+  obsidian_extra_tags: []          # Additional tags for Obsidian frontmatter

@@ -387,7 +387,30 @@ function switchTab(name) {
 
 async function exportNotes(format) {
     if (!currentVideoId) return;
-    window.open(`${API_BASE}/export/${currentVideoId}?format=${format}`, '_blank');
+
+    if (format === 'notion') {
+        // Notion export returns JSON blocks - download as file
+        try {
+            const res = await fetch(`${API_BASE}/export/${currentVideoId}?format=notion`);
+            if (!res.ok) {
+                const err = await res.json();
+                alert('Export failed: ' + (err.detail || 'Unknown error'));
+                return;
+            }
+            const data = await res.json();
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${currentVideoId}_notion_blocks.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        } catch (e) {
+            alert('Export error: ' + e.message);
+        }
+    } else {
+        window.open(`${API_BASE}/export/${currentVideoId}?format=${format}`, '_blank');
+    }
 }
 
 // ============================================================

@@ -6,7 +6,7 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI, Request
-from fastapi.responses import HTMLResponse
+from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
@@ -60,5 +60,13 @@ def create_app() -> FastAPI:
     async def health():
         """Health check endpoint."""
         return {"status": "ok", "version": __version__}
+
+    @app.get("/favicon.ico", include_in_schema=False)
+    async def favicon():
+        """Serve favicon."""
+        favicon_path = static_dir / "favicon.svg"
+        if favicon_path.exists():
+            return FileResponse(str(favicon_path), media_type="image/svg+xml")
+        return HTMLResponse(status_code=204)
 
     return app

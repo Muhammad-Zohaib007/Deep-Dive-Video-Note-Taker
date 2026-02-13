@@ -4,7 +4,27 @@ version = "1.0.0"
 description = "Zero-cost, CPU-only AI system that converts short-form video content into structured notes, key timestamps, and action items."
 authors = ["Zohaib"]
 license = "MIT"
+readme = "README.md"
+homepage = "https://github.com/zohaib/deep-dive-notetaker"
+repository = "https://github.com/zohaib/deep-dive-notetaker"
+keywords = ["video", "notes", "transcription", "whisper", "llm", "ai"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Environment :: Web Environment",
+    "Framework :: FastAPI",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Education",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Multimedia :: Video",
+    "Topic :: Text Processing :: General",
+]
 packages = [{include = "notetaker", from = "src"}]
+include = ["config.default.yaml"]
 
 [tool.poetry.scripts]
 notetaker = "notetaker.cli:app"

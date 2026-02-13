@@ -1,1 +1,1 @@
-"""Export modules for Markdown and JSON output."""
+"""Export modules for Markdown, JSON, Obsidian, and Notion output."""

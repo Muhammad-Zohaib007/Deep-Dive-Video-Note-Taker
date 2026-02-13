@@ -1,4 +1,4 @@
-"""Comprehensive unit tests for the export modules (markdown and json_export)."""
+"""Comprehensive unit tests for the export modules (markdown, json_export, obsidian, notion)."""
 
 from __future__ import annotations
 
@@ -9,6 +9,19 @@ import pytest
 
 from notetaker.export.markdown import generate_markdown, export_markdown
 from notetaker.export.json_export import generate_json, export_json
+from notetaker.export.obsidian import generate_obsidian_markdown, export_obsidian, _extract_tags
+from notetaker.export.notion import (
+    generate_notion_blocks,
+    generate_notion_page_properties,
+    export_notion_json,
+    _heading_block,
+    _paragraph_block,
+    _bulleted_list_item,
+    _to_do_block,
+    _callout_block,
+    _divider_block,
+    _table_row,
+)
 
 
 # ---------------------------------------------------------------------------
@@ -250,3 +263,331 @@ class TestExportJson:
         assert not nested_path.parent.exists()
         export_json(sample_generated_output, sample_metadata, nested_path)
         assert nested_path.exists()
+
+
+# ---------------------------------------------------------------------------
+# Obsidian – _extract_tags
+# ---------------------------------------------------------------------------
+
+
+class TestExtractTags:
+    """Tests for _extract_tags()."""
+
+    def test_includes_video_notes_tag(self, sample_generated_output):
+        """Always includes the 'video-notes' tag."""
+        tags = _extract_tags(sample_generated_output)
+        assert "video-notes" in tags
+        assert tags[0] == "video-notes"
+
+    def test_extracts_section_headings_as_tags(self, sample_generated_output):
+        """Section headings become tag-safe lowercase strings."""
+        tags = _extract_tags(sample_generated_output)
+        assert "introduction" in tags
+        assert "functions" in tags
+
+    def test_deduplicates_tags(self):
+        """Duplicate section headings should not produce duplicate tags."""
+        from notetaker.models import GeneratedOutput, NoteSection, StructuredNotes
+
+        output = GeneratedOutput(
+            structured_notes=StructuredNotes(
+                title="T",
+                summary="S",
+                sections=[
+                    NoteSection(heading="Overview", key_points=[]),
+                    NoteSection(heading="Overview", key_points=[]),
+                ],
+            ),
+            timestamps=[],
+            action_items=[],
+        )
+        tags = _extract_tags(output)
+        assert tags.count("overview") == 1
+
+    def test_short_headings_excluded(self):
+        """Headings with 2 or fewer chars after cleaning are excluded."""
+        from notetaker.models import GeneratedOutput, NoteSection, StructuredNotes
+
+        output = GeneratedOutput(
+            structured_notes=StructuredNotes(
+                title="T",
+                summary="S",
+                sections=[NoteSection(heading="QA", key_points=[])],
+            ),
+            timestamps=[],
+            action_items=[],
+        )
+        tags = _extract_tags(output)
+        # "qa" is only 2 chars, so excluded
+        assert "qa" not in tags
+
+
+# ---------------------------------------------------------------------------
+# Obsidian – generate_obsidian_markdown
+# ---------------------------------------------------------------------------
+
+
+class TestGenerateObsidianMarkdown:
+    """Tests for generate_obsidian_markdown()."""
+
+    def test_has_yaml_frontmatter(self, sample_generated_output):
+        """Output starts and ends frontmatter with '---' delimiters."""
+        md = generate_obsidian_markdown(sample_generated_output)
+        lines = md.splitlines()
+        assert lines[0] == "---"
+        # Find second ---
+        second_delim = None
+        for i, line in enumerate(lines[1:], 1):
+            if line == "---":
+                second_delim = i
+                break
+        assert second_delim is not None
+
+    def test_frontmatter_contains_title(self, sample_generated_output):
+        """Frontmatter includes title field."""
+        md = generate_obsidian_markdown(sample_generated_output)
+        assert 'title: "Python Programming Tutorial"' in md
+
+    def test_frontmatter_tags(self, sample_generated_output):
+        """Frontmatter contains tags section."""
+        md = generate_obsidian_markdown(sample_generated_output)
+        assert "tags:" in md
+        assert "  - video-notes" in md
+
+    def test_metadata_callout_with_metadata(self, sample_generated_output, sample_metadata):
+        """Metadata callout block appears when metadata is provided."""
+        md = generate_obsidian_markdown(sample_generated_output, metadata=sample_metadata)
+        assert "> [!info] Video Info" in md
+        assert "https://youtube.com/watch?v=test123" in md
+
+    def test_no_metadata_callout_without_metadata(self, sample_generated_output):
+        """No callout when metadata is None."""
+        md = generate_obsidian_markdown(sample_generated_output, metadata=None)
+        assert "> [!info]" not in md
+
+    def test_summary_section(self, sample_generated_output):
+        """Summary appears as H2 section."""
+        md = generate_obsidian_markdown(sample_generated_output)
+        assert "## Summary" in md
+        assert "A tutorial covering Python functions, classes, and decorators." in md
+
+    def test_action_items_in_callout(self, sample_generated_output):
+        """Action items use Obsidian callout format."""
+        md = generate_obsidian_markdown(sample_generated_output)
+        assert "> [!todo] Tasks" in md
+        assert "> - [ ] Practice writing Python functions" in md
+
+    def test_timestamps_as_bold_list(self, sample_generated_output):
+        """Timestamps rendered as bold time + label."""
+        md = generate_obsidian_markdown(sample_generated_output)
+        assert "- **00:00** - Introduction" in md
+        assert "- **00:05** - Topics overview" in md
+
+    def test_extra_tags_appended(self, sample_generated_output):
+        """Extra tags are added to frontmatter."""
+        md = generate_obsidian_markdown(
+            sample_generated_output, extra_tags=["python", "tutorial"]
+        )
+        assert "  - python" in md
+        assert "  - tutorial" in md
+
+    def test_footer_present(self, sample_generated_output):
+        """Footer with generator attribution is present."""
+        md = generate_obsidian_markdown(sample_generated_output)
+        assert "Generated by Deep-Dive Video Note Taker" in md
+
+
+# ---------------------------------------------------------------------------
+# Obsidian – export_obsidian
+# ---------------------------------------------------------------------------
+
+
+class TestExportObsidian:
+    """Tests for export_obsidian()."""
+
+    def test_writes_file_to_disk(self, sample_generated_output, sample_metadata, tmp_data_dir):
+        """export_obsidian writes a .md file."""
+        out_path = tmp_data_dir / "obsidian_output.md"
+        export_obsidian(sample_generated_output, sample_metadata, out_path)
+        assert out_path.exists()
+        content = out_path.read_text(encoding="utf-8")
+        assert "---" in content
+        assert "# Python Programming Tutorial" in content
+
+    def test_creates_parent_directories(self, sample_generated_output, sample_metadata, tmp_data_dir):
+        """export_obsidian creates intermediate parent directories."""
+        nested = tmp_data_dir / "vault" / "notes" / "video.md"
+        assert not nested.parent.exists()
+        export_obsidian(sample_generated_output, sample_metadata, nested)
+        assert nested.exists()
+
+
+# ---------------------------------------------------------------------------
+# Notion – block builders
+# ---------------------------------------------------------------------------
+
+
+class TestNotionBlockBuilders:
+    """Tests for individual Notion block builder functions."""
+
+    def test_heading_block(self):
+        block = _heading_block("Test Heading", level=2)
+        assert block["type"] == "heading_2"
+        assert block["heading_2"]["rich_text"][0]["text"]["content"] == "Test Heading"
+
+    def test_heading_block_level3(self):
+        block = _heading_block("H3", level=3)
+        assert block["type"] == "heading_3"
+
+    def test_heading_block_clamps_to_3(self):
+        block = _heading_block("H5", level=5)
+        assert block["type"] == "heading_3"  # clamped
+
+    def test_paragraph_block(self):
+        block = _paragraph_block("Hello world")
+        assert block["type"] == "paragraph"
+        assert block["paragraph"]["rich_text"][0]["text"]["content"] == "Hello world"
+
+    def test_bulleted_list_item(self):
+        block = _bulleted_list_item("A point")
+        assert block["type"] == "bulleted_list_item"
+        assert block["bulleted_list_item"]["rich_text"][0]["text"]["content"] == "A point"
+
+    def test_to_do_block_unchecked(self):
+        block = _to_do_block("Do this")
+        assert block["type"] == "to_do"
+        assert block["to_do"]["checked"] is False
+
+    def test_to_do_block_checked(self):
+        block = _to_do_block("Done", checked=True)
+        assert block["to_do"]["checked"] is True
+
+    def test_callout_block(self):
+        block = _callout_block("Info text", emoji="info")
+        assert block["type"] == "callout"
+        assert block["callout"]["rich_text"][0]["text"]["content"] == "Info text"
+
+    def test_divider_block(self):
+        block = _divider_block()
+        assert block["type"] == "divider"
+
+    def test_table_row(self):
+        row = _table_row(["A", "B", "C"])
+        assert row["type"] == "table_row"
+        assert len(row["table_row"]["cells"]) == 3
+        assert row["table_row"]["cells"][0][0]["text"]["content"] == "A"
+
+
+# ---------------------------------------------------------------------------
+# Notion – generate_notion_blocks
+# ---------------------------------------------------------------------------
+
+
+class TestGenerateNotionBlocks:
+    """Tests for generate_notion_blocks()."""
+
+    def test_returns_list_of_blocks(self, sample_generated_output):
+        blocks = generate_notion_blocks(sample_generated_output)
+        assert isinstance(blocks, list)
+        assert len(blocks) > 0
+
+    def test_contains_summary_heading(self, sample_generated_output):
+        blocks = generate_notion_blocks(sample_generated_output)
+        heading_texts = [
+            b.get(b["type"], {}).get("rich_text", [{}])[0].get("text", {}).get("content", "")
+            for b in blocks
+            if b["type"].startswith("heading_")
+        ]
+        assert "Summary" in heading_texts
+
+    def test_contains_notes_heading(self, sample_generated_output):
+        blocks = generate_notion_blocks(sample_generated_output)
+        heading_texts = [
+            b.get(b["type"], {}).get("rich_text", [{}])[0].get("text", {}).get("content", "")
+            for b in blocks
+            if b["type"].startswith("heading_")
+        ]
+        assert "Notes" in heading_texts
+
+    def test_contains_timestamps_table(self, sample_generated_output):
+        blocks = generate_notion_blocks(sample_generated_output)
+        table_blocks = [b for b in blocks if b["type"] == "table"]
+        assert len(table_blocks) == 1
+        table = table_blocks[0]["table"]
+        assert table["table_width"] == 2
+        assert table["has_column_header"] is True
+
+    def test_contains_action_item_todos(self, sample_generated_output):
+        blocks = generate_notion_blocks(sample_generated_output)
+        todo_blocks = [b for b in blocks if b["type"] == "to_do"]
+        assert len(todo_blocks) == 1
+        assert "Practice writing Python functions" in todo_blocks[0]["to_do"]["rich_text"][0]["text"]["content"]
+
+    def test_metadata_callout_with_metadata(self, sample_generated_output, sample_metadata):
+        blocks = generate_notion_blocks(sample_generated_output, metadata=sample_metadata)
+        callout_blocks = [b for b in blocks if b["type"] == "callout"]
+        assert len(callout_blocks) >= 1
+        callout_text = callout_blocks[0]["callout"]["rich_text"][0]["text"]["content"]
+        assert "youtube.com" in callout_text
+
+    def test_no_callout_without_metadata(self, sample_generated_output):
+        blocks = generate_notion_blocks(sample_generated_output, metadata=None)
+        callout_blocks = [b for b in blocks if b["type"] == "callout"]
+        assert len(callout_blocks) == 0
+
+
+# ---------------------------------------------------------------------------
+# Notion – generate_notion_page_properties
+# ---------------------------------------------------------------------------
+
+
+class TestGenerateNotionPageProperties:
+    """Tests for generate_notion_page_properties()."""
+
+    def test_name_property(self, sample_generated_output):
+        props = generate_notion_page_properties(sample_generated_output)
+        assert "Name" in props
+        assert props["Name"]["title"][0]["text"]["content"] == "Python Programming Tutorial"
+
+    def test_metadata_properties(self, sample_generated_output, sample_metadata):
+        props = generate_notion_page_properties(sample_generated_output, metadata=sample_metadata)
+        assert "Source URL" in props
+        assert props["Source URL"]["url"] == "https://youtube.com/watch?v=test123"
+        assert "Duration (min)" in props
+        assert props["Duration (min)"]["number"] == 15.0
+        assert "Video ID" in props
+
+    def test_no_metadata_properties(self, sample_generated_output):
+        props = generate_notion_page_properties(sample_generated_output, metadata=None)
+        assert "Name" in props
+        assert "Source URL" not in props
+
+
+# ---------------------------------------------------------------------------
+# Notion – export_notion_json
+# ---------------------------------------------------------------------------
+
+
+class TestExportNotionJson:
+    """Tests for export_notion_json()."""
+
+    def test_writes_valid_json(self, sample_generated_output, sample_metadata, tmp_data_dir):
+        out_path = tmp_data_dir / "notion.json"
+        export_notion_json(sample_generated_output, sample_metadata, out_path)
+        assert out_path.exists()
+        data = json.loads(out_path.read_text(encoding="utf-8"))
+        assert "properties" in data
+        assert "children" in data
+
+    def test_children_are_blocks(self, sample_generated_output, sample_metadata, tmp_data_dir):
+        out_path = tmp_data_dir / "notion2.json"
+        export_notion_json(sample_generated_output, sample_metadata, out_path)
+        data = json.loads(out_path.read_text(encoding="utf-8"))
+        assert isinstance(data["children"], list)
+        assert len(data["children"]) > 0
+
+    def test_creates_parent_dirs(self, sample_generated_output, sample_metadata, tmp_data_dir):
+        nested = tmp_data_dir / "a" / "b" / "notion.json"
+        assert not nested.parent.exists()
+        export_notion_json(sample_generated_output, sample_metadata, nested)
+        assert nested.exists()

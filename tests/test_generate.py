@@ -21,10 +21,12 @@ from notetaker.models import (
     StructuredNotes,
 )
 from notetaker.pipeline.generate import (
+    DEFAULT_SYSTEM_PROMPT,
     SYSTEM_PROMPT,
     _build_user_prompt,
     _dict_to_generated_output,
     _fallback_extraction,
+    _load_custom_prompt,
     _parse_llm_json,
     generate_notes,
     get_cache_key,
@@ -428,3 +430,42 @@ class TestSystemPrompt:
 
     def test_system_prompt_mentions_json(self):
         assert "JSON" in SYSTEM_PROMPT
+
+
+# ---------------------------------------------------------------------------
+# 16–20 — _load_custom_prompt
+# ---------------------------------------------------------------------------
+
+class TestLoadCustomPrompt:
+    """Tests for _load_custom_prompt."""
+
+    def test_returns_default_when_none(self):
+        """Passing None returns the default system prompt."""
+        result = _load_custom_prompt(None)
+        assert result == DEFAULT_SYSTEM_PROMPT
+
+    def test_returns_default_when_empty_string(self):
+        """Passing empty string returns the default system prompt."""
+        result = _load_custom_prompt("")
+        assert result == DEFAULT_SYSTEM_PROMPT
+
+    def test_loads_custom_file(self, tmp_path):
+        """Loads content from a valid custom prompt file."""
+        prompt_file = tmp_path / "custom_prompt.txt"
+        prompt_file.write_text("You are a custom assistant. Respond in JSON.", encoding="utf-8")
+
+        result = _load_custom_prompt(str(prompt_file))
+        assert result == "You are a custom assistant. Respond in JSON."
+
+    def test_returns_default_when_file_not_found(self, tmp_path):
+        """Returns default prompt when the file does not exist."""
+        result = _load_custom_prompt(str(tmp_path / "nonexistent.txt"))
+        assert result == DEFAULT_SYSTEM_PROMPT
+
+    def test_returns_default_when_file_is_empty(self, tmp_path):
+        """Returns default prompt when the file is empty or whitespace-only."""
+        prompt_file = tmp_path / "empty.txt"
+        prompt_file.write_text("   \n\t  ", encoding="utf-8")
+
+        result = _load_custom_prompt(str(prompt_file))
+        assert result == DEFAULT_SYSTEM_PROMPT

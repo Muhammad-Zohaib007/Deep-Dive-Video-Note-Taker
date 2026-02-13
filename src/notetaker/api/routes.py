@@ -6,7 +6,7 @@ Endpoints:
   GET    /api/notes/{video_id}  - Get structured notes
   POST   /api/query/{video_id}  - Ask a question (RAG Q&A)
   GET    /api/library           - List all processed videos
-  GET    /api/export/{video_id} - Export notes as Markdown or JSON
+  GET    /api/export/{video_id} - Export notes as Markdown, JSON, Obsidian, or Notion
 """
 
 from __future__ import annotations
@@ -210,6 +210,32 @@ async def export_notes(
             md_content,
             media_type="text/markdown",
             headers={"Content-Disposition": f'attachment; filename="{video_id}_notes.md"'},
+        )
+    elif format == OutputFormat.OBSIDIAN:
+        from notetaker.export.obsidian import generate_obsidian_markdown
+        from notetaker.models import GeneratedOutput, VideoMetadata
+
+        output = GeneratedOutput(**notes_data)
+        metadata = VideoMetadata(**metadata_data) if metadata_data else None
+        obsidian_content = generate_obsidian_markdown(output, metadata)
+        return PlainTextResponse(
+            obsidian_content,
+            media_type="text/markdown",
+            headers={"Content-Disposition": f'attachment; filename="{video_id}_obsidian.md"'},
+        )
+    elif format == OutputFormat.NOTION:
+        from notetaker.export.notion import generate_notion_blocks, generate_notion_page_properties
+        from notetaker.models import GeneratedOutput, VideoMetadata
+
+        output = GeneratedOutput(**notes_data)
+        metadata = VideoMetadata(**metadata_data) if metadata_data else None
+        notion_data = {
+            "properties": generate_notion_page_properties(output, metadata),
+            "children": generate_notion_blocks(output, metadata),
+        }
+        return JSONResponse(
+            content=notion_data,
+            headers={"Content-Disposition": f'attachment; filename="{video_id}_notion.json"'},
         )
     else:
         return JSONResponse(

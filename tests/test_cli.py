@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -70,6 +71,7 @@ def test_help_flag():
     assert "list" in result.output
     assert "serve" in result.output
     assert "config" in result.output
+    assert "batch" in result.output
 
 
 # ---------------------------------------------------------------------------
@@ -285,3 +287,137 @@ def test_query_success(mock_init, tmp_path):
     assert result.exit_code == 0
     assert "Python programming" in result.output
     assert "What is this about?" in result.output
+
+
+# ---------------------------------------------------------------------------
+# 9. batch – no sources shows error
+# ---------------------------------------------------------------------------
+
+
+@patch("notetaker.cli._init_app")
+def test_batch_no_sources(mock_init, tmp_path):
+    """batch command with no sources shows error."""
+    mock_cfg = _make_mock_config(tmp_path)
+
+    with patch("notetaker.config.get_config", return_value=mock_cfg):
+        result = runner.invoke(app, ["batch"])
+
+    assert result.exit_code == 1
+    assert "No sources provided" in result.output
+
+
+# ---------------------------------------------------------------------------
+# 10. batch – from file
+# ---------------------------------------------------------------------------
+
+
+@patch("notetaker.cli._init_app")
+def test_batch_from_file(mock_init, tmp_path, sample_generated_output, sample_metadata):
+    """batch command reads URLs from a file."""
+    mock_cfg = _make_mock_config(tmp_path)
+    output_dir = tmp_path / "outputs"
+    output_dir.mkdir(parents=True, exist_ok=True)
+    mock_cfg.output_dir = output_dir
+
+    # Create a URL file
+    url_file = tmp_path / "urls.txt"
+    url_file.write_text("https://example.com/video1\n# comment\nhttps://example.com/video2\n")
+
+    mock_runner_instance = MagicMock()
+    mock_runner_instance.run.return_value = (sample_generated_output, sample_metadata)
+
+    with (
+        patch("notetaker.config.get_config", return_value=mock_cfg),
+        patch(
+            "notetaker.pipeline.runner.PipelineRunner",
+            return_value=mock_runner_instance,
+        ),
+        patch("notetaker.export.json_export.export_json"),
+    ):
+        result = runner.invoke(app, ["batch", "--file", str(url_file)])
+
+    assert result.exit_code == 0
+    assert "Batch" in result.output
+    # PipelineRunner was called twice (2 non-comment URLs)
+    assert mock_runner_instance.run.call_count == 2
+
+
+# ---------------------------------------------------------------------------
+# 11. batch – from args
+# ---------------------------------------------------------------------------
+
+
+@patch("notetaker.cli._init_app")
+def test_batch_from_args(mock_init, tmp_path, sample_generated_output, sample_metadata):
+    """batch command with URL args."""
+    mock_cfg = _make_mock_config(tmp_path)
+    output_dir = tmp_path / "outputs"
+    output_dir.mkdir(parents=True, exist_ok=True)
+    mock_cfg.output_dir = output_dir
+
+    mock_runner_instance = MagicMock()
+    mock_runner_instance.run.return_value = (sample_generated_output, sample_metadata)
+
+    with (
+        patch("notetaker.config.get_config", return_value=mock_cfg),
+        patch(
+            "notetaker.pipeline.runner.PipelineRunner",
+            return_value=mock_runner_instance,
+        ),
+        patch("notetaker.export.json_export.export_json"),
+    ):
+        result = runner.invoke(app, [
+            "batch",
+            "https://example.com/v1",
+            "https://example.com/v2",
+        ])
+
+    assert result.exit_code == 0
+    assert "succeeded" in result.output
+
+
+# ---------------------------------------------------------------------------
+# 12. batch – handles failure gracefully
+# ---------------------------------------------------------------------------
+
+
+@patch("notetaker.cli._init_app")
+def test_batch_handles_failure(mock_init, tmp_path):
+    """batch command continues after a failure."""
+    mock_cfg = _make_mock_config(tmp_path)
+    output_dir = tmp_path / "outputs"
+    output_dir.mkdir(parents=True, exist_ok=True)
+    mock_cfg.output_dir = output_dir
+
+    mock_runner_instance = MagicMock()
+    mock_runner_instance.run.side_effect = RuntimeError("Ollama down")
+
+    with (
+        patch("notetaker.config.get_config", return_value=mock_cfg),
+        patch(
+            "notetaker.pipeline.runner.PipelineRunner",
+            return_value=mock_runner_instance,
+        ),
+    ):
+        result = runner.invoke(app, ["batch", "https://example.com/v1"])
+
+    assert result.exit_code == 0
+    assert "failed" in result.output.lower()
+    assert "0/1 succeeded" in result.output
+
+
+# ---------------------------------------------------------------------------
+# 13. batch – missing file
+# ---------------------------------------------------------------------------
+
+
+@patch("notetaker.cli._init_app")
+def test_batch_file_not_found(mock_init, tmp_path):
+    """batch command errors when file doesn't exist."""
+    mock_cfg = _make_mock_config(tmp_path)
+
+    with patch("notetaker.config.get_config", return_value=mock_cfg):
+        result = runner.invoke(app, ["batch", "--file", "/nonexistent/urls.txt"])
+
+    assert result.exit_code == 1
+    assert "File not found" in result.output

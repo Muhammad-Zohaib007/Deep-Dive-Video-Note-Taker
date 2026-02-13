@@ -28,7 +28,7 @@ from notetaker.utils.logging import get_logger
 logger = get_logger("generate")
 
 # System prompt from spec Section 4.5.2
-SYSTEM_PROMPT = """You are a precise note-taking assistant. Given a video transcript, produce a JSON response with exactly three keys:
+DEFAULT_SYSTEM_PROMPT = """You are a precise note-taking assistant. Given a video transcript, produce a JSON response with exactly three keys:
 
 1. "structured_notes" - a hierarchical outline with:
    - "title": a concise title for the video
@@ -46,6 +46,38 @@ SYSTEM_PROMPT = """You are a precise note-taking assistant. Given a video transc
 
 Be concise and factual. Only include information explicitly present in the transcript.
 Respond ONLY with valid JSON. No markdown, no code fences, no explanation."""
+
+# Keep module-level reference for backward compatibility
+SYSTEM_PROMPT = DEFAULT_SYSTEM_PROMPT
+
+
+def _load_custom_prompt(template_path: str | None) -> str:
+    """Load a custom system prompt from a file path, or return default.
+
+    Args:
+        template_path: Path to a custom prompt text file, or None.
+
+    Returns:
+        The system prompt string to use.
+    """
+    if not template_path:
+        return DEFAULT_SYSTEM_PROMPT
+
+    path = Path(template_path).expanduser()
+    if not path.exists():
+        logger.warning(f"Custom prompt template not found: {path}. Using default.")
+        return DEFAULT_SYSTEM_PROMPT
+
+    try:
+        content = path.read_text(encoding="utf-8").strip()
+        if content:
+            logger.info(f"Loaded custom prompt template: {path}")
+            return content
+        logger.warning(f"Custom prompt template is empty: {path}. Using default.")
+        return DEFAULT_SYSTEM_PROMPT
+    except Exception as e:
+        logger.warning(f"Failed to load custom prompt: {e}. Using default.")
+        return DEFAULT_SYSTEM_PROMPT
 
 
 def _build_user_prompt(transcript: Transcript) -> str:
@@ -200,6 +232,7 @@ def generate_notes(
     temperature: float = 0.3,
     max_tokens: int = 2048,
     timeout: int = 900,
+    prompt_template_path: Optional[str] = None,
 ) -> GeneratedOutput:
     """Generate structured notes from a transcript using Ollama.
 
@@ -210,12 +243,14 @@ def generate_notes(
         temperature: Sampling temperature.
         max_tokens: Maximum output tokens.
         timeout: Request timeout in seconds.
+        prompt_template_path: Optional path to custom system prompt file.
 
     Returns:
         GeneratedOutput with notes, timestamps, and action items.
     """
     import ollama as ollama_sdk
 
+    system_prompt = _load_custom_prompt(prompt_template_path)
     logger.info(f"Generating structured notes with {model}...")
     start_time = time.time()
 
@@ -232,7 +267,7 @@ def generate_notes(
         for part in client.chat(
             model=model,
             messages=[
-                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt},
             ],
             options={

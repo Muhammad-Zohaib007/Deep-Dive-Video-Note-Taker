@@ -8,6 +8,7 @@ Loads configuration from:
 
 from __future__ import annotations
 
+import os
 import shutil
 from pathlib import Path
 from typing import Any
@@ -103,8 +104,33 @@ class AppConfig:
         # Expand ~ paths
         self._config = _expand_paths(merged)
 
+        # Apply environment variable overrides
+        self._apply_env_overrides()
+
         # Ensure data directories exist
         self._ensure_dirs()
+
+    def _apply_env_overrides(self) -> None:
+        """Apply environment variable overrides to the config.
+
+        Supported env vars:
+            NOTETAKER_OLLAMA_BASE_URL -> ollama.base_url
+            NOTETAKER_OLLAMA_MODEL    -> ollama.model
+            NOTETAKER_WHISPER_MODEL   -> whisper.model
+            NOTETAKER_DATA_DIR        -> data_dir
+            NOTETAKER_OUTPUT_DIR      -> output_dir
+        """
+        env_mappings = {
+            "NOTETAKER_OLLAMA_BASE_URL": "ollama.base_url",
+            "NOTETAKER_OLLAMA_MODEL": "ollama.model",
+            "NOTETAKER_WHISPER_MODEL": "whisper.model",
+            "NOTETAKER_DATA_DIR": "data_dir",
+            "NOTETAKER_OUTPUT_DIR": "output_dir",
+        }
+        for env_var, dotted_key in env_mappings.items():
+            value = os.environ.get(env_var)
+            if value is not None:
+                self.set(dotted_key, value)
 
     def _ensure_dirs(self) -> None:
         """Create required directories if they don't exist."""

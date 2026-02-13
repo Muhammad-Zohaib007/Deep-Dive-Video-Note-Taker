@@ -38,6 +38,8 @@ class PipelineRunner:
         output_format: str = "json",
         video_id: Optional[str] = None,
         on_progress: Optional[Callable[[PipelineStage, str], None]] = None,
+        resume: bool = False,
+        profile: bool = False,
     ):
         """Initialize the pipeline runner.
 
@@ -45,9 +47,11 @@ class PipelineRunner:
             source: Video URL or local file path.
             whisper_model: Whisper model size.
             ollama_model: Ollama model name.
-            output_format: Output format (json, markdown).
+            output_format: Output format (json, markdown, obsidian, notion).
             video_id: Optional pre-set video ID.
             on_progress: Callback for progress updates.
+            resume: If True, skip stages that already have output files.
+            profile: If True, collect detailed timing/memory data.
         """
         self.source = source
         self.whisper_model = whisper_model
@@ -55,6 +59,8 @@ class PipelineRunner:
         self.output_format = output_format
         self.video_id = video_id
         self.on_progress = on_progress
+        self.resume = resume
+        self.profile = profile
 
         self.config = get_config()
         self.job = ProcessingJob()
@@ -108,9 +114,15 @@ class PipelineRunner:
             transcribe_audio,
         )
         from notetaker.storage.cache import load_cached_notes, save_cached_notes
+        from notetaker.utils.profiler import profile_stage, start_profiling, stop_profiling
 
         self.total_start = time.time()
         data_dir = self.config.data_dir
+
+        # Start profiling if requested
+        profiling_report = None
+        if self.profile:
+            profiling_report = start_profiling()
 
         try:
             # ----------------------------------------------------------------
@@ -123,14 +135,15 @@ class PipelineRunner:
             )
             stage_start = time.time()
 
-            wav_path, video_id, title = extract_audio(
-                source=self.source,
-                data_dir=data_dir,
-                max_duration=self.config.max_duration,
-                sample_rate=self.config.get("audio.sample_rate", 16000),
-                channels=self.config.get("audio.channels", 1),
-                video_id=self.video_id,
-            )
+            with profile_stage("audio_extraction"):
+                wav_path, video_id, title = extract_audio(
+                    source=self.source,
+                    data_dir=data_dir,
+                    max_duration=self.config.max_duration,
+                    sample_rate=self.config.get("audio.sample_rate", 16000),
+                    channels=self.config.get("audio.channels", 1),
+                    video_id=self.video_id,
+                )
 
             self.video_id = video_id
             self.job.video_id = video_id
@@ -156,17 +169,18 @@ class PipelineRunner:
             )
             stage_start = time.time()
 
-            # Check transcript cache
+            # Check transcript cache (or resume)
             if transcript_path.exists():
                 logger.info("Using cached transcript.")
                 transcript = load_transcript(transcript_path)
             else:
-                transcript = transcribe_audio(
-                    audio_path=wav_path,
-                    model_name=self.whisper_model,
-                    language=self.config.get("whisper.language", "en"),
-                    models_dir=data_dir / "models",
-                )
+                with profile_stage("transcription"):
+                    transcript = transcribe_audio(
+                        audio_path=wav_path,
+                        model_name=self.whisper_model,
+                        language=self.config.get("whisper.language", "en"),
+                        models_dir=data_dir / "models",
+                    )
                 save_transcript(transcript, transcript_path)
 
             self.stage_times["transcription"] = time.time() - stage_start
@@ -186,22 +200,23 @@ class PipelineRunner:
             )
             stage_start = time.time()
 
-            chunks = embed_and_store(
-                transcript=transcript,
-                video_id=video_id,
-                persist_directory=self.config.get(
-                    "chroma.persist_directory",
-                    str(data_dir / "chroma"),
-                ),
-                collection_name=self.config.get(
-                    "chroma.collection_name", "notetaker_default"
-                ),
-                embedding_model=self.config.get(
-                    "embedding.model", "all-MiniLM-L6-v2"
-                ),
-                chunk_size_tokens=self.config.get("embedding.chunk_size_tokens", 250),
-                chunk_overlap_tokens=self.config.get("embedding.chunk_overlap_tokens", 50),
-            )
+            with profile_stage("embedding"):
+                chunks = embed_and_store(
+                    transcript=transcript,
+                    video_id=video_id,
+                    persist_directory=self.config.get(
+                        "chroma.persist_directory",
+                        str(data_dir / "chroma"),
+                    ),
+                    collection_name=self.config.get(
+                        "chroma.collection_name", "notetaker_default"
+                    ),
+                    embedding_model=self.config.get(
+                        "embedding.model", "all-MiniLM-L6-v2"
+                    ),
+                    chunk_size_tokens=self.config.get("embedding.chunk_size_tokens", 250),
+                    chunk_overlap_tokens=self.config.get("embedding.chunk_overlap_tokens", 50),
+                )
 
             self.stage_times["embedding"] = time.time() - stage_start
             self._update_stage(
@@ -220,22 +235,30 @@ class PipelineRunner:
             )
             stage_start = time.time()
 
-            # Check LLM output cache
-            cached = load_cached_notes(transcript, self.ollama_model, video_dir)
-            if cached:
-                logger.info("Using cached notes.")
-                output = cached
+            # Check LLM output cache (or resume from existing notes)
+            if self.resume and notes_path.exists():
+                logger.info("Resume mode: using existing notes.")
+                from notetaker.pipeline.generate import load_notes
+                output = load_notes(notes_path)
             else:
-                output = generate_notes(
-                    transcript=transcript,
-                    model=self.ollama_model,
-                    base_url=self.config.get("ollama.base_url", "http://localhost:11434"),
-                    temperature=self.config.get("ollama.temperature", 0.3),
-                    max_tokens=self.config.get("ollama.max_tokens", 2048),
-                    timeout=self.config.get("ollama.timeout_seconds", 900),
-                )
-                save_notes(output, notes_path)
-                save_cached_notes(transcript, self.ollama_model, output, video_dir)
+                cached = load_cached_notes(transcript, self.ollama_model, video_dir)
+                if cached:
+                    logger.info("Using cached notes.")
+                    output = cached
+                else:
+                    prompt_template = self.config.get("prompts.generation_template")
+                    with profile_stage("generation"):
+                        output = generate_notes(
+                            transcript=transcript,
+                            model=self.ollama_model,
+                            base_url=self.config.get("ollama.base_url", "http://localhost:11434"),
+                            temperature=self.config.get("ollama.temperature", 0.3),
+                            max_tokens=self.config.get("ollama.max_tokens", 2048),
+                            timeout=self.config.get("ollama.timeout_seconds", 900),
+                            prompt_template_path=prompt_template,
+                        )
+                    save_notes(output, notes_path)
+                    save_cached_notes(transcript, self.ollama_model, output, video_dir)
 
             self.stage_times["generation"] = time.time() - stage_start
             self._update_stage(
@@ -271,6 +294,11 @@ class PipelineRunner:
 
             # Log summary
             self._log_summary(metadata)
+
+            # Stop profiling and store report
+            if self.profile and profiling_report:
+                stop_profiling()
+                self._profiling_report = profiling_report
 
             self.job.status = ProcessingStatus.COMPLETED
             return output, metadata

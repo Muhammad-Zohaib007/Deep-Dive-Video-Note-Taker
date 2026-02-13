@@ -221,6 +221,78 @@ class TestExportEndpoint:
         body = resp.json()
         assert body["structured_notes"]["title"] == "Python Programming Tutorial"
 
+    def test_export_markdown(self, client, test_config, sample_generated_output):
+        video_id = "vid_exp_md"
+        video_dir = test_config.data_dir / "videos" / video_id
+        video_dir.mkdir(parents=True, exist_ok=True)
+        (video_dir / "notes.json").write_text(
+            sample_generated_output.model_dump_json(), encoding="utf-8"
+        )
+
+        resp = client.get(f"/api/export/{video_id}?format=markdown")
+        assert resp.status_code == 200
+        assert "text/markdown" in resp.headers["content-type"]
+        body = resp.text
+        assert "Python Programming Tutorial" in body
+
+    def test_export_obsidian(self, client, test_config, sample_generated_output):
+        video_id = "vid_exp_obs"
+        video_dir = test_config.data_dir / "videos" / video_id
+        video_dir.mkdir(parents=True, exist_ok=True)
+        (video_dir / "notes.json").write_text(
+            sample_generated_output.model_dump_json(), encoding="utf-8"
+        )
+
+        resp = client.get(f"/api/export/{video_id}?format=obsidian")
+        assert resp.status_code == 200
+        assert "text/markdown" in resp.headers["content-type"]
+        body = resp.text
+        # Obsidian export has YAML frontmatter
+        assert "---" in body
+        assert "Python Programming Tutorial" in body
+
+    def test_export_obsidian_filename(self, client, test_config, sample_generated_output):
+        video_id = "vid_exp_obs2"
+        video_dir = test_config.data_dir / "videos" / video_id
+        video_dir.mkdir(parents=True, exist_ok=True)
+        (video_dir / "notes.json").write_text(
+            sample_generated_output.model_dump_json(), encoding="utf-8"
+        )
+
+        resp = client.get(f"/api/export/{video_id}?format=obsidian")
+        assert resp.status_code == 200
+        assert "_obsidian.md" in resp.headers.get("content-disposition", "")
+
+    def test_export_notion(self, client, test_config, sample_generated_output):
+        video_id = "vid_exp_not"
+        video_dir = test_config.data_dir / "videos" / video_id
+        video_dir.mkdir(parents=True, exist_ok=True)
+        (video_dir / "notes.json").write_text(
+            sample_generated_output.model_dump_json(), encoding="utf-8"
+        )
+
+        resp = client.get(f"/api/export/{video_id}?format=notion")
+        assert resp.status_code == 200
+        assert "application/json" in resp.headers["content-type"]
+        body = resp.json()
+        assert "properties" in body
+        assert "children" in body
+        # children should be a list of Notion blocks
+        assert isinstance(body["children"], list)
+        assert len(body["children"]) > 0
+
+    def test_export_notion_filename(self, client, test_config, sample_generated_output):
+        video_id = "vid_exp_not2"
+        video_dir = test_config.data_dir / "videos" / video_id
+        video_dir.mkdir(parents=True, exist_ok=True)
+        (video_dir / "notes.json").write_text(
+            sample_generated_output.model_dump_json(), encoding="utf-8"
+        )
+
+        resp = client.get(f"/api/export/{video_id}?format=notion")
+        assert resp.status_code == 200
+        assert "_notion.json" in resp.headers.get("content-disposition", "")
+
     def test_export_not_found(self, client):
         resp = client.get("/api/export/missing?format=json")
         assert resp.status_code == 404

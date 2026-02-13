@@ -1,0 +1,62 @@
+# Git
+.git
+.gitignore
+
+# Python
+__pycache__
+*.py[cod]
+*$py.class
+*.egg-info
+dist
+build
+
+# Virtual environments
+.venv
+venv
+env
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Media files
+*.wav
+*.mp3
+*.mp4
+*.webm
+*.mkv
+*.mov
+*.avi
+
+# Models (will be downloaded inside container)
+models/
+*.bin
+*.ggml
+
+# Data directories
+chroma_data/
+.notetaker/
+outputs/
+logs/
+
+# Tests and evaluation (not needed in production image)
+tests/
+scripts/
+
+# Docs
+*.docx
+*.md
+!README.md
+
+# OpenCode
+.opencode/
+
+# Environment files
+.env
+.env.local

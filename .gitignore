@@ -1,0 +1,65 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Project data outputs
+outputs/
+
+# Media files (downloaded/extracted)
+*.wav
+*.mp3
+*.mp4
+*.webm
+*.mkv
+*.mov
+*.avi
+
+# Whisper models (large binaries)
+models/
+*.bin
+*.ggml
+
+# ChromaDB local storage
+chroma_data/
+
+# Logs
+logs/
+*.log
+
+# Environment
+.env
+.env.local
+
+# Test artifacts
+tests/fixtures/*.wav
+tests/fixtures/*.mp4
+
+# User data directory
+.notetaker/
+
+# Spec documents
+*.docx
+
+# OpenCode
+.opencode/

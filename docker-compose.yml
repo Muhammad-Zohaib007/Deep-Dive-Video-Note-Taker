@@ -1,0 +1,39 @@
+version: "3.8"
+
+services:
+  # Ollama LLM server
+  ollama:
+    image: ollama/ollama:latest
+    container_name: notetaker-ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    restart: unless-stopped
+    # Pull default model on first start
+    entrypoint: >
+      sh -c "ollama serve &
+      sleep 5 &&
+      ollama pull llama3.1:8b &&
+      wait"
+
+  # Deep-Dive Video Note Taker
+  notetaker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: notetaker-app
+    ports:
+      - "8000:8000"
+    volumes:
+      - notetaker_data:/root/.notetaker
+      - ./outputs:/app/outputs
+    environment:
+      - OLLAMA_BASE_URL=http://ollama:11434
+    depends_on:
+      - ollama
+    restart: unless-stopped
+
+volumes:
+  ollama_data:
+  notetaker_data:

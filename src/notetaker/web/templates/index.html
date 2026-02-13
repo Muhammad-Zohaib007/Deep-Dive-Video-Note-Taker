@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Deep-Dive Video Note Taker</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar: Video Library -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <h2>Library</h2>
+                <button class="btn-icon" onclick="refreshLibrary()" title="Refresh">&#x21bb;</button>
+            </div>
+            <input type="text" id="library-search" placeholder="Search videos..." class="search-input" oninput="filterLibrary()">
+            <div id="library-list" class="library-list">
+                <p class="empty-state">No videos yet</p>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Header -->
+            <header class="app-header">
+                <h1>Deep-Dive Video Note Taker</h1>
+                <span class="subtitle">Zero-cost, CPU-only, 15-minute videos</span>
+            </header>
+
+            <!-- Input Section -->
+            <section class="input-section">
+                <div class="input-row">
+                    <input type="text" id="video-url" placeholder="Paste YouTube URL or video URL..." class="url-input">
+                    <button class="btn btn-primary" onclick="processVideo()" id="process-btn">Process</button>
+                </div>
+                <div class="input-row">
+                    <label class="file-upload-label">
+                        <input type="file" id="file-upload" accept=".mp4,.webm,.mkv,.mov,.avi" onchange="handleFileUpload(event)">
+                        <span>Or upload a file</span>
+                    </label>
+                    <div class="options-row">
+                        <select id="whisper-model">
+                            <option value="tiny">Whisper: tiny</option>
+                            <option value="base">Whisper: base</option>
+                            <option value="small" selected>Whisper: small</option>
+                            <option value="medium">Whisper: medium</option>
+                        </select>
+                        <select id="ollama-model">
+                            <option value="llama3.1:8b" selected>Llama 3.1 8B</option>
+                            <option value="mistral:7b">Mistral 7B</option>
+                            <option value="phi3:mini">Phi-3 Mini</option>
+                            <option value="gemma2:9b">Gemma 2 9B</option>
+                        </select>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Progress Section -->
+            <section class="progress-section" id="progress-section" style="display:none;">
+                <h3>Processing...</h3>
+                <div class="progress-stages" id="progress-stages"></div>
+            </section>
+
+            <!-- Results Section -->
+            <section class="results-section" id="results-section" style="display:none;">
+                <!-- Tab Navigation -->
+                <div class="tabs">
+                    <button class="tab active" onclick="switchTab('notes')">Notes</button>
+                    <button class="tab" onclick="switchTab('timestamps')">Timestamps</button>
+                    <button class="tab" onclick="switchTab('actions')">Action Items</button>
+                    <button class="tab" onclick="switchTab('transcript')">Transcript</button>
+                    <button class="tab" onclick="switchTab('qa')">Q&A</button>
+                </div>
+
+                <!-- Notes Tab -->
+                <div class="tab-content active" id="tab-notes">
+                    <div class="notes-header">
+                        <h2 id="notes-title"></h2>
+                        <div class="export-buttons">
+                            <button class="btn btn-small" onclick="exportNotes('markdown')">Export MD</button>
+                            <button class="btn btn-small" onclick="exportNotes('json')">Export JSON</button>
+                        </div>
+                    </div>
+                    <p id="notes-summary" class="summary"></p>
+                    <div id="notes-sections"></div>
+                </div>
+
+                <!-- Timestamps Tab -->
+                <div class="tab-content" id="tab-timestamps">
+                    <div id="timestamps-list"></div>
+                </div>
+
+                <!-- Action Items Tab -->
+                <div class="tab-content" id="tab-actions">
+                    <div id="actions-list"></div>
+                </div>
+
+                <!-- Transcript Tab -->
+                <div class="tab-content" id="tab-transcript">
+                    <div id="transcript-content"></div>
+                </div>
+
+                <!-- Q&A Tab -->
+                <div class="tab-content" id="tab-qa">
+                    <div class="qa-container">
+                        <div class="qa-messages" id="qa-messages">
+                            <p class="empty-state">Ask a question about this video</p>
+                        </div>
+                        <div class="qa-input">
+                            <input type="text" id="qa-question" placeholder="Ask a question..." onkeypress="if(event.key==='Enter')askQuestion()">
+                            <button class="btn btn-primary" onclick="askQuestion()">Ask</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="/static/js/app.js"></script>
+</body>
+</html>

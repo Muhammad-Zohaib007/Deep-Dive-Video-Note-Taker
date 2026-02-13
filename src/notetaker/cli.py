@@ -11,8 +11,6 @@ Commands:
 from __future__ import annotations
 
 import json
-import sys
-from pathlib import Path
 from typing import Optional
 
 import typer
@@ -268,7 +266,7 @@ def list_videos(
 
 @app.command()
 def serve(
-    host: str = typer.Option("0.0.0.0", "--host", "-h", help="Server host."),
+    host: str = typer.Option("0.0.0.0", "--host", help="Server host."),
     port: int = typer.Option(8000, "--port", "-p", help="Server port."),
     verbose: bool = typer.Option(False, "--verbose", help="Enable debug logging."),
 ) -> None:

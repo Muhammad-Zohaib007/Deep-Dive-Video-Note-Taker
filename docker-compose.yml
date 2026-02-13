@@ -10,12 +10,21 @@ services:
     volumes:
       - ollama_data:/root/.ollama
     restart: unless-stopped
-    # Pull default model on first start
+    # Pull default model on first start, waiting for serve to be ready
     entrypoint: >
       sh -c "ollama serve &
-      sleep 5 &&
+      until curl -sf http://localhost:11434/api/tags > /dev/null 2>&1; do
+        echo 'Waiting for ollama serve to be ready...'
+        sleep 2
+      done &&
       ollama pull llama3.1:8b &&
       wait"
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:11434/api/tags"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
 
   # Deep-Dive Video Note Taker
   notetaker:

@@ -11,7 +11,7 @@ import time
 from pathlib import Path
 from typing import Optional
 
-from notetaker.models import Transcript, TranscriptSegment, WordTimestamp
+from notetaker.models import Transcript, TranscriptSegment
 from notetaker.utils.download import ensure_model
 from notetaker.utils.logging import get_logger
 
@@ -81,11 +81,14 @@ def transcribe_audio(
                 end_ms = getattr(seg, "t1", 0)
                 text = getattr(seg, "text", str(seg))
 
-            start_sec = start_ms / 100.0 if start_ms > 1000 else start_ms / 1000.0
-            end_sec = end_ms / 100.0 if end_ms > 1000 else end_ms / 1000.0
-
-            # Normalize: pywhispercpp uses 10ms units
-            if start_ms < 100000 and end_ms < 100000:
+            # pywhispercpp returns centiseconds (10ms units) for object-style
+            # segments, and milliseconds for tuple-style segments.
+            if isinstance(seg, tuple):
+                # Tuple format: values are in milliseconds
+                start_sec = start_ms / 1000.0
+                end_sec = end_ms / 1000.0
+            else:
+                # Object format: t0/t1 are in centiseconds (10ms units)
                 start_sec = start_ms / 100.0
                 end_sec = end_ms / 100.0
 
@@ -126,7 +129,7 @@ def transcribe_audio(
         return transcript
 
     except Exception as e:
-        raise RuntimeError(f"Transcription failed: {e}")
+        raise RuntimeError(f"Transcription failed: {e}") from e
 
 
 def save_transcript(transcript: Transcript, output_path: Path) -> None:

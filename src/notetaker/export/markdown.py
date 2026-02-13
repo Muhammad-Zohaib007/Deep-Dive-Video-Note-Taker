@@ -74,7 +74,10 @@ def generate_markdown(
         lines.append("| Time | Description |")
         lines.append("|------|-------------|")
         for ts in output.timestamps:
-            lines.append(f"| {ts.time} | {ts.label} |")
+            # Escape pipe characters that would break Markdown table syntax
+            safe_time = ts.time.replace("|", "\\|")
+            safe_label = ts.label.replace("|", "\\|")
+            lines.append(f"| {safe_time} | {safe_label} |")
         lines.append("")
 
     # Action Items

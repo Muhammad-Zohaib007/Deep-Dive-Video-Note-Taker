@@ -276,6 +276,13 @@ class PipelineRunner:
             return output, metadata
 
         except Exception as e:
+            # Mark the current stage as FAILED
+            if self.job.current_stage:
+                self._update_stage(
+                    self.job.current_stage,
+                    ProcessingStatus.FAILED,
+                    str(e),
+                )
             self.job.status = ProcessingStatus.FAILED
             self.job.error = str(e)
             logger.error(f"Pipeline failed: {e}")

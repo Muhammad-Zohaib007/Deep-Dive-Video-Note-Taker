@@ -74,15 +74,28 @@ def chunk_transcript(
     chunk_index = 0
 
     # Track character offsets for timestamp mapping
-    char_offset = 0
-
+    # We track cumulative offset through the full_text to avoid repeated find()
+    # which would give wrong results for duplicate sentences.
+    sentence_offsets: list[int] = []
+    search_start = 0
     for sentence in sentences:
+        idx = full_text.find(sentence, search_start)
+        if idx == -1:
+            # Fallback: use current search position
+            idx = search_start
+        sentence_offsets.append(idx)
+        search_start = idx + len(sentence)
+
+    sent_idx = 0  # index into sentences list
+
+    for i, sentence in enumerate(sentences):
         sentence_tokens = _estimate_tokens(sentence)
 
         # If adding this sentence would exceed the limit, finalize chunk
         if current_tokens + sentence_tokens > chunk_size_tokens and current_sentences:
             chunk_text = " ".join(current_sentences)
-            chunk_start_offset = full_text.find(current_sentences[0])
+            # Use the offset of the first sentence in the current chunk
+            chunk_start_offset = sentence_offsets[sent_idx]
             chunk_end_offset = chunk_start_offset + len(chunk_text)
 
             start_time = _find_segment_time(
@@ -105,15 +118,19 @@ def chunk_transcript(
             # Overlap: keep last N tokens worth of sentences
             overlap_tokens = 0
             overlap_sentences: list[str] = []
+            overlap_count = 0
             for s in reversed(current_sentences):
                 s_tokens = _estimate_tokens(s)
                 if overlap_tokens + s_tokens > chunk_overlap_tokens:
                     break
                 overlap_sentences.insert(0, s)
                 overlap_tokens += s_tokens
+                overlap_count += 1
 
             current_sentences = overlap_sentences
             current_tokens = overlap_tokens
+            # Advance sent_idx: the first sentence of the new chunk
+            sent_idx = i - overlap_count + 1 if overlap_count > 0 else i
 
         current_sentences.append(sentence)
         current_tokens += sentence_tokens
@@ -121,7 +138,7 @@ def chunk_transcript(
     # Final chunk
     if current_sentences:
         chunk_text = " ".join(current_sentences)
-        chunk_start_offset = full_text.find(current_sentences[0])
+        chunk_start_offset = sentence_offsets[sent_idx] if sent_idx < len(sentence_offsets) else 0
         chunk_end_offset = chunk_start_offset + len(chunk_text)
 
         start_time = _find_segment_time(

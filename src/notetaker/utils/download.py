@@ -125,8 +125,8 @@ def download_model(
                     for chunk in response.iter_bytes(chunk_size=8192):
                         f.write(chunk)
 
-        # Rename tmp to final
-        tmp_path.rename(model_path)
+        # Atomically move tmp to final (replace works on Windows even if target exists)
+        tmp_path.replace(model_path)
         logger.info(f"Model downloaded successfully: {model_path}")
         return model_path
 

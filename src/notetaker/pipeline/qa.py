@@ -7,12 +7,24 @@ grounded answers with timestamp citations using Ollama.
 from __future__ import annotations
 
 import time
-from typing import Any, Optional
+from typing import Any
 
 from notetaker.models import QueryResponse
 from notetaker.utils.logging import get_logger
 
 logger = get_logger("qa")
+
+# Module-level cache for the SentenceTransformer model to avoid reloading on
+# every query.
+_embedding_model_cache: dict[str, Any] = {}
+
+
+def _get_embedding_model(model_name: str):
+    """Get or create a cached SentenceTransformer instance."""
+    if model_name not in _embedding_model_cache:
+        from sentence_transformers import SentenceTransformer
+        _embedding_model_cache[model_name] = SentenceTransformer(model_name)
+    return _embedding_model_cache[model_name]
 
 # RAG system prompt from spec Section 4.6.2
 RAG_SYSTEM_PROMPT = """You are a helpful assistant answering questions about a video. \
@@ -86,17 +98,19 @@ def retrieve_chunks(
         ChromaDB query results dict.
     """
     import chromadb
-    from sentence_transformers import SentenceTransformer
 
     logger.info(f"Retrieving top-{top_k} chunks for query: {query[:80]}...")
 
-    # Embed the query
-    model = SentenceTransformer(embedding_model)
+    # Embed the query (uses cached model)
+    model = _get_embedding_model(embedding_model)
     query_embedding = model.encode([query]).tolist()
 
     # Query ChromaDB
     client = chromadb.PersistentClient(path=persist_directory)
-    collection = client.get_or_create_collection(name=collection_name)
+    collection = client.get_or_create_collection(
+        name=collection_name,
+        metadata={"hnsw:space": "cosine"},
+    )
 
     results = collection.query(
         query_embeddings=query_embedding,
@@ -131,15 +145,17 @@ def retrieve_across_library(
         ChromaDB query results.
     """
     import chromadb
-    from sentence_transformers import SentenceTransformer
 
     logger.info(f"Library search for: {query[:80]}...")
 
-    model = SentenceTransformer(embedding_model)
+    model = _get_embedding_model(embedding_model)
     query_embedding = model.encode([query]).tolist()
 
     client = chromadb.PersistentClient(path=persist_directory)
-    collection = client.get_or_create_collection(name=collection_name)
+    collection = client.get_or_create_collection(
+        name=collection_name,
+        metadata={"hnsw:space": "cosine"},
+    )
 
     results = collection.query(
         query_embeddings=query_embedding,
@@ -236,4 +252,4 @@ def answer_question(
 
     except Exception as e:
         logger.error(f"Q&A generation failed: {e}")
-        raise RuntimeError(f"Q&A failed: {e}")
+        raise RuntimeError(f"Q&A failed: {e}") from e

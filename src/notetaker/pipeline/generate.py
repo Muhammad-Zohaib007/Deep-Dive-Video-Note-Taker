@@ -12,6 +12,7 @@ import hashlib
 import json
 import re
 import time
+from pathlib import Path
 from typing import Any, Optional
 
 from notetaker.models import (
@@ -245,7 +246,7 @@ def generate_notes(
 
     except Exception as e:
         logger.error(f"LLM generation failed: {e}")
-        raise RuntimeError(f"Note generation failed: {e}")
+        raise RuntimeError(f"Note generation failed: {e}") from e
 
 
 def get_cache_key(transcript: Transcript, model: str, prompt_version: str = "v1") -> str:
@@ -256,8 +257,7 @@ def get_cache_key(transcript: Transcript, model: str, prompt_version: str = "v1"
 
 def save_notes(output: GeneratedOutput, path: Path) -> None:
     """Save generated notes to JSON file."""
-    from pathlib import Path as _Path
-    path = _Path(path)
+    path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
     with open(path, "w", encoding="utf-8") as f:
         json.dump(output.model_dump(), f, indent=2, ensure_ascii=False)
@@ -266,8 +266,7 @@ def save_notes(output: GeneratedOutput, path: Path) -> None:
 
 def load_notes(path: Path) -> GeneratedOutput:
     """Load generated notes from JSON file."""
-    from pathlib import Path as _Path
-    path = _Path(path)
+    path = Path(path)
     with open(path, "r", encoding="utf-8") as f:
         data = json.load(f)
     return GeneratedOutput(**data)

@@ -8,7 +8,6 @@ Loads configuration from:
 
 from __future__ import annotations
 
-import os
 import shutil
 from pathlib import Path
 from typing import Any
@@ -16,8 +15,31 @@ from typing import Any
 import yaml
 
 
-# Default config bundled with the package
-_DEFAULT_CONFIG_PATH = Path(__file__).parent.parent.parent / "config.default.yaml"
+def _get_default_config_path() -> Path:
+    """Locate the bundled config.default.yaml.
+
+    Works both when running from source and when installed as a package.
+    """
+    # First: try relative to this file (works in source tree)
+    source_path = Path(__file__).parent.parent.parent / "config.default.yaml"
+    if source_path.exists():
+        return source_path
+
+    # Second: try importlib.resources (works when installed as package)
+    try:
+        import importlib.resources as pkg_resources
+        # Try the top-level package directory
+        ref = pkg_resources.files("notetaker").joinpath("../../config.default.yaml")
+        if hasattr(ref, "_path") and Path(str(ref)).exists():
+            return Path(str(ref))
+    except Exception:
+        pass
+
+    # Fallback: return the source path (will be handled gracefully by _load_yaml)
+    return source_path
+
+
+_DEFAULT_CONFIG_PATH = _get_default_config_path()
 _USER_CONFIG_DIR = Path.home() / ".notetaker"
 _USER_CONFIG_PATH = _USER_CONFIG_DIR / "config.yaml"
 

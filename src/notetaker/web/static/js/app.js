@@ -99,6 +99,10 @@ function pollJobStatus(jobId) {
     pollInterval = setInterval(async () => {
         try {
             const res = await fetch(`${API_BASE}/status/${jobId}`);
+            if (!res.ok) {
+                console.error('Poll request failed:', res.status, res.statusText);
+                return; // Retry on next interval
+            }
             const job = await res.json();
 
             updateProgressUI(job);
@@ -338,7 +342,9 @@ async function refreshLibrary() {
             div.dataset.videoId = v.video_id;
             div.dataset.title = (v.title || '').toLowerCase();
 
-            const durationMin = (v.duration_seconds / 60).toFixed(1);
+            const durationMin = (v.duration_seconds != null && !isNaN(v.duration_seconds))
+                ? (v.duration_seconds / 60).toFixed(1)
+                : '?';
             div.innerHTML = `
                 <div class="title">${escapeHtml(v.title || v.video_id)}</div>
                 <div class="meta">${durationMin} min &middot; ${v.processing_date ? v.processing_date.substring(0, 10) : ''}</div>

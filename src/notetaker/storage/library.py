@@ -88,7 +88,7 @@ class VideoLibrary:
         return None
 
     def delete_video(self, video_id: str) -> bool:
-        """Delete a video and all its data.
+        """Delete a video and all its data, including ChromaDB chunks.
 
         Args:
             video_id: Video identifier.
@@ -100,6 +100,29 @@ class VideoLibrary:
         video_dir = self.videos_dir / video_id
         if not video_dir.exists():
             return False
+
+        # Clean up chunks from ChromaDB
+        try:
+            import chromadb
+            from notetaker.config import get_config
+            config = get_config()
+            chroma_dir = config.get(
+                "chroma.persist_directory",
+                str(self.data_dir / "chroma"),
+            )
+            collection_name = config.get(
+                "chroma.collection_name", "notetaker_default"
+            )
+            client = chromadb.PersistentClient(path=chroma_dir)
+            collection = client.get_or_create_collection(
+                name=collection_name,
+                metadata={"hnsw:space": "cosine"},
+            )
+            # Delete all chunks matching this video_id
+            collection.delete(where={"video_id": video_id})
+            logger.info(f"Removed ChromaDB chunks for video: {video_id}")
+        except Exception as e:
+            logger.warning(f"Failed to clean up ChromaDB for {video_id}: {e}")
 
         shutil.rmtree(video_dir)
         logger.info(f"Deleted video: {video_id}")

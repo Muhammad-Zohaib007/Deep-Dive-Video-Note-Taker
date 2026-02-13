@@ -66,6 +66,8 @@ def get_video_duration(file_path: str | Path) -> float:
         info = json.loads(result.stdout)
         duration = float(info["format"]["duration"])
         return duration
+    except subprocess.TimeoutExpired:
+        raise RuntimeError("ffprobe timed out after 30 seconds.")
     except (KeyError, json.JSONDecodeError) as e:
         raise RuntimeError(f"Could not parse duration from ffprobe output: {e}")
     except FileNotFoundError:

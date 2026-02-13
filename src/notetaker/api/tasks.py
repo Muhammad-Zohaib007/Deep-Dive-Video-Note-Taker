@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import threading
 from typing import Optional
 
 from notetaker.models import ProcessingJob, ProcessingStatus, PipelineStage
@@ -11,30 +12,38 @@ logger = get_logger("tasks")
 
 
 class JobManager:
-    """In-memory job tracker for async processing tasks."""
+    """In-memory job tracker for async processing tasks.
+
+    Thread-safe: uses a lock for all dict mutations since background
+    tasks run in a separate thread.
+    """
 
     def __init__(self):
         self._jobs: dict[str, ProcessingJob] = {}
+        self._lock = threading.Lock()
 
     def create_job(self) -> ProcessingJob:
         """Create a new processing job."""
         job = ProcessingJob()
         job.init_stages()
-        self._jobs[job.job_id] = job
+        with self._lock:
+            self._jobs[job.job_id] = job
         logger.info(f"Created job: {job.job_id}")
         return job
 
     def get_job(self, job_id: str) -> Optional[ProcessingJob]:
         """Get a job by ID."""
-        return self._jobs.get(job_id)
+        with self._lock:
+            return self._jobs.get(job_id)
 
     def update_job(self, job_id: str, **kwargs) -> None:
         """Update job fields."""
-        job = self._jobs.get(job_id)
-        if job:
-            for key, value in kwargs.items():
-                if hasattr(job, key):
-                    setattr(job, key, value)
+        with self._lock:
+            job = self._jobs.get(job_id)
+            if job:
+                for key, value in kwargs.items():
+                    if hasattr(job, key):
+                        setattr(job, key, value)
 
     def run_pipeline(
         self,
@@ -42,6 +51,7 @@ class JobManager:
         source: str,
         whisper_model: str = "small",
         ollama_model: str = "llama3.1:8b",
+        output_format: str = "json",
     ) -> None:
         """Run the full pipeline as a background task.
 
@@ -49,7 +59,8 @@ class JobManager:
         """
         from notetaker.pipeline.runner import PipelineRunner
 
-        job = self._jobs.get(job_id)
+        with self._lock:
+            job = self._jobs.get(job_id)
         if not job:
             logger.error(f"Job {job_id} not found")
             return
@@ -69,6 +80,7 @@ class JobManager:
                 source=source,
                 whisper_model=whisper_model,
                 ollama_model=ollama_model,
+                output_format=output_format,
                 on_progress=on_progress,
             )
 

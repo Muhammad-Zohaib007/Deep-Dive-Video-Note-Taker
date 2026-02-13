@@ -12,8 +12,6 @@ Endpoints:
 from __future__ import annotations
 
 import json
-from pathlib import Path
-from typing import Optional
 
 from fastapi import APIRouter, BackgroundTasks, File, HTTPException, UploadFile
 from fastapi.responses import PlainTextResponse, JSONResponse
@@ -53,6 +51,7 @@ async def process_video(
         source=request.url,
         whisper_model=request.whisper_model.value,
         ollama_model=request.ollama_model,
+        output_format=request.output_format.value if hasattr(request, 'output_format') and request.output_format else "json",
     )
 
     return job
@@ -66,12 +65,26 @@ async def process_upload(
     ollama_model: str = "llama3.1:8b",
 ) -> ProcessingJob:
     """Upload a video file for processing."""
+    from notetaker.models import WhisperModel as WM
+
     config = get_config()
+
+    # Validate whisper_model is a valid enum value
+    valid_models = {m.value for m in WM}
+    if whisper_model not in valid_models:
+        raise HTTPException(
+            400,
+            f"Invalid whisper_model '{whisper_model}'. "
+            f"Choose from: {', '.join(sorted(valid_models))}",
+        )
+
+    # Handle None filename from UploadFile
+    filename = file.filename or f"upload_{file.size or 'unknown'}"
 
     # Save uploaded file
     upload_dir = config.data_dir / "uploads"
     upload_dir.mkdir(parents=True, exist_ok=True)
-    file_path = upload_dir / file.filename
+    file_path = upload_dir / filename
 
     with open(file_path, "wb") as f:
         content = await file.read()

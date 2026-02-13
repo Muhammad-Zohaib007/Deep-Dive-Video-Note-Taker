@@ -14,7 +14,7 @@ RUN pip install --no-cache-dir poetry
 WORKDIR /app
 
 # Copy dependency files first for layer caching
-COPY pyproject.toml ./
+COPY pyproject.toml poetry.lock ./
 
 # Configure Poetry: no virtualenv inside container
 RUN poetry config virtualenvs.create false

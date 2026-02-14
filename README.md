@@ -1,4 +1,4 @@
-# 🚀 Deep-Dive Video Note Taker
+# 🚀 Deep-Dive Video Note Taker (Lite)
 `LLM + RAG`
 <div align="center">
 
@@ -203,74 +203,46 @@ NOTETAKER_NOTION_API_KEY
 ---
 
 ## 🐳 Docker
->>>>>>> 616c1cd67989d249b65f389c41c07adef4738747
 
 ```bash
 docker compose up --build
 ```
 
-<<<<<<< HEAD
-This starts the web server on port 8000 with an Ollama sidecar. Services include healthchecks and dependency ordering. Set `NOTETAKER_OLLAMA_BASE_URL` if Ollama runs on a different host.
+App → [http://localhost:8000](http://localhost:8000)
+Ollama → [http://localhost:11434](http://localhost:11434)
 
-### Docker details
+---
 
-- **Dockerfile**: Multi-stage build with Node.js (for yt-dlp), FFmpeg, and a healthcheck endpoint.
-- **docker-compose.yml**: Two services (`notetaker` and `ollama`) with healthchecks, volume mounts, and `depends_on` conditions.
-- **.dockerignore**: Excludes `__pycache__`, `.git`, test artifacts, and local data.
+## ❓ FAQ (AEO Optimized)
 
-## CI/CD
+### Does it upload my videos?
 
-GitHub Actions workflow (`.github/workflows/ci.yml`) runs on every push and PR:
+No. Everything runs locally.
 
-1. **Lint** -- ruff check + ruff format check
-2. **Test** -- pytest across a matrix of 3 OS (Ubuntu, macOS, Windows) x 3 Python versions (3.10, 3.11, 3.12)
-3. **Docker build** -- verifies the Docker image builds successfully
+### Can I use it offline?
 
-## Project Structure
+Yes — fully offline if Ollama + models are installed.
 
-```
-src/notetaker/
-  pipeline/         # 5-stage processing pipeline
-    audio.py          # Stage 1: Audio extraction
-    transcribe.py     # Stage 2: Whisper transcription
-    embed.py          # Stage 3: Chunking + embedding + ChromaDB
-    generate.py       # Stage 4: LLM structured note generation
-    qa.py             # Stage 5: RAG Q&A
-    runner.py         # Pipeline orchestrator (resume, profiling)
-  storage/          # Data persistence layer
-    cache.py          # Transcript + LLM output caching
-    chroma.py         # ChromaDB wrapper
-    library.py        # Multi-video library management
-  api/              # FastAPI REST API
-    app.py            # Application factory + favicon route
-    routes.py         # All endpoints (incl. obsidian/notion export)
-    tasks.py          # Background job manager
-  export/           # Export modules
-    markdown.py       # Markdown export
-    json_export.py    # JSON export
-    obsidian.py       # Obsidian export (YAML frontmatter, callouts)
-    notion.py         # Notion blocks export + API integration
-  web/              # Frontend SPA
-    templates/        # Jinja2 HTML templates
-    static/           # CSS, JavaScript, favicon
-  utils/            # Shared utilities
-    logging.py        # Structured logging
-    validators.py     # Input validation
-    download.py       # yt-dlp download helpers
-    profiler.py       # Performance profiling (timing, memory)
-  cli.py            # Typer CLI (process, batch, query, list, serve, config)
-  config.py         # YAML config loader + env var overrides
-  models.py         # Pydantic data models
-tests/              # Unit tests (200+)
-  evaluation/       # WER, ROUGE, BERTScore, RAG quality scripts
-scripts/            # Setup and evaluation helpers
-```
+### Can I search my entire video library?
 
-## Testing
+Yes — semantic retrieval via ChromaDB.
+
+### Example Queries
+
+* “Summarize the lecture in 5 bullet points”
+* “List action items from 00:20–00:40”
+* “Where was regression discussed?”
+
+---
+
+## 🧪 Development
+
+Run tests:
 
 ```bash
 poetry run pytest -v
 ```
+
 Lint:
 
 ```bash
@@ -291,6 +263,5 @@ PRs welcome.
 ---
 
 ## 📄 License
->>>>>>> 616c1cd67989d249b65f389c41c07adef4738747
 
 MIT

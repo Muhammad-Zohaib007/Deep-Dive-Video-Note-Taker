@@ -42,7 +42,6 @@ app = typer.Typer(
 )
 console = Console()
 
-
 def _init_app(verbose: bool = False) -> None:
     """Initialize config and logging."""
     from notetaker.config import get_config
@@ -55,12 +54,10 @@ def _init_app(verbose: bool = False) -> None:
         verbose=verbose,
     )
 
-
 def version_callback(value: bool) -> None:
     if value:
         rprint(f"Deep-Dive Video Note Taker v{__version__}")
         raise typer.Exit()
-
 
 @app.callback()
 def main(
@@ -73,7 +70,6 @@ def main(
 ) -> None:
     """Deep-Dive Video Note Taker - Lightweight Edition."""
     pass
-
 
 @app.command()
 def process(
@@ -109,7 +105,7 @@ def process(
         console.print("\n[bold yellow]Pre-flight warnings:[/bold yellow]")
         for issue in issues:
             console.print(f"  [yellow]! {issue}[/yellow]")
-        console.print()
+        console.print()  
 
     console.print(Panel(
         f"[bold]Processing:[/bold] {source}\n"
@@ -177,7 +173,6 @@ def process(
         console.print(f"\n[bold red]Error:[/bold red] {e}")
         raise typer.Exit(1)
 
-
 @app.command()
 def batch(
     sources: list[str] = typer.Argument(
@@ -222,10 +217,16 @@ def batch(
             console.print(f"[bold red]File not found:[/bold red] {file}")
             raise typer.Exit(1)
         lines = file_path.read_text(encoding="utf-8").strip().splitlines()
-        all_sources.extend(line.strip() for line in lines if line.strip() and not line.startswith("#"))
+        all_sources.extend(
+            line.strip() for line in lines
+            if line.strip() and not line.startswith("#")
+        )
 
     if not all_sources:
-        console.print("[bold red]No sources provided.[/bold red] Pass URLs as arguments or use --file.")
+        console.print(
+            "[bold red]No sources provided.[/bold red] "+
+            "Pass URLs as arguments or use --file."
+        )
         raise typer.Exit(1)
 
     console.print(Panel(
@@ -259,7 +260,10 @@ def batch(
                 "status": "success",
                 "time": f"{metadata.processing_time_seconds:.1f}s",
             })
-            console.print(f"  [green]Done:[/green] {metadata.video_id} ({metadata.processing_time_seconds:.1f}s)")
+            console.print(
+                f"  [green]Done:[/green] {metadata.video_id} "
+                f"({metadata.processing_time_seconds:.1f}s)"
+            )
 
         except Exception as e:
             results.append({
@@ -395,7 +399,6 @@ def query(
         console.print(f"\n[bold red]Error:[/bold red] {e}")
         raise typer.Exit(1)
 
-
 @app.command(name="list")
 def list_videos(
     verbose: bool = typer.Option(False, "--verbose", help="Enable debug logging."),
@@ -434,7 +437,6 @@ def list_videos(
 
     console.print(table)
 
-
 @app.command()
 def serve(
     host: str = typer.Option("0.0.0.0", "--host", help="Server host."),
@@ -468,7 +470,6 @@ def serve(
         factory=True,
     )
 
-
 @app.command()
 def config(
     verbose: bool = typer.Option(False, "--verbose", help="Enable debug logging."),
@@ -484,7 +485,6 @@ def config(
         title="Current Configuration",
         border_style="blue",
     ))
-
 
 def _display_notes(output, metadata) -> None:
     """Display generated notes in the terminal."""

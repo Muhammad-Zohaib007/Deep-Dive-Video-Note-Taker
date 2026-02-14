@@ -5,6 +5,7 @@ FROM python:3.11-slim AS base
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ffmpeg \
     curl \
+    cmake \
     build-essential \
     && curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
     && apt-get install -y --no-install-recommends nodejs \
@@ -28,8 +29,8 @@ RUN poetry install --no-root --without dev --no-interaction
 COPY config.default.yaml ./
 COPY src/ ./src/
 
-# Install the application itself
-RUN poetry install --only-root --no-interaction
+# Install the project package
+RUN poetry install --without dev --no-interaction
 
 # Create data directory
 RUN mkdir -p /root/.notetaker

@@ -1,4 +1,4 @@
-# 🚀 Deep-Dive Video Note Taker (Lite)
+# 🚀 ''LLM'' Deep-Dive Video Note Taker
 
 <div align="center">
 

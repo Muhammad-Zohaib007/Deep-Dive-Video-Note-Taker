@@ -232,7 +232,6 @@ Yes — semantic retrieval via ChromaDB.
 * “Summarize the lecture in 5 bullet points”
 * “List action items from 00:20–00:40”
 * “Where was regression discussed?”
-* 
 ---
 
 ## 🧪 Development

@@ -1,5 +1,5 @@
-`LLM + RAG` # 🚀 Deep-Dive Video Note Taker
-
+# 🚀 Deep-Dive Video Note Taker
+`LLM + RAG`
 <div align="center">
 
 <h3>🎥 Local Video → Structured Notes + Timestamps + Action Items + RAG Q&A</h3>

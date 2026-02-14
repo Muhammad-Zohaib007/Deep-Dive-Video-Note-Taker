@@ -2,10 +2,8 @@
 
 from __future__ import annotations
 
-from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-import pytest
 from typer.testing import CliRunner
 
 from notetaker.cli import app
@@ -86,7 +84,7 @@ def test_list_no_videos(mock_get_config, mock_init, tmp_path):
     mock_cfg = _make_mock_config(tmp_path)
     mock_get_config.return_value = mock_cfg
 
-    with patch("notetaker.cli.VideoLibrary", create=True) as MockLibrary:
+    with patch("notetaker.cli.VideoLibrary", create=True) as mock_library:
         # Patch the lazy imports inside list_videos
         with patch.dict(
             "sys.modules",
@@ -97,7 +95,7 @@ def test_list_no_videos(mock_get_config, mock_init, tmp_path):
         # We need to patch the imports that happen inside the function body
         mock_lib_instance = MagicMock()
         mock_lib_instance.list_videos.return_value = []
-        MockLibrary.return_value = mock_lib_instance
+        mock_library.return_value = mock_lib_instance
 
         # Patch get_config at the location where list_videos imports it
         with patch("notetaker.config.get_config", return_value=mock_cfg):
@@ -200,19 +198,20 @@ def test_process_invokes_pipeline(
         patch(
             "notetaker.pipeline.runner.PipelineRunner",
             return_value=mock_runner_instance,
-        ) as MockRunner,
+        ) as mock_runner,
         patch("notetaker.utils.validators.run_preflight_checks", return_value=[]),
         patch("notetaker.export.json_export.export_json"),
     ):
-        result = runner.invoke(app, [
-            "process",
-            "https://youtube.com/watch?v=test123",
-        ])
+        result = runner.invoke(
+            app,
+            [
+                "process",
+                "https://youtube.com/watch?v=test123",
+            ],
+        )
 
     assert result.exit_code == 0
-    # PipelineRunner was instantiated
-    MockRunner.assert_called_once()
-    # run() was invoked on the runner
+    mock_runner.assert_called_once()
     mock_runner_instance.run.assert_called_once()
 
 
@@ -366,11 +365,14 @@ def test_batch_from_args(mock_init, tmp_path, sample_generated_output, sample_me
         ),
         patch("notetaker.export.json_export.export_json"),
     ):
-        result = runner.invoke(app, [
-            "batch",
-            "https://example.com/v1",
-            "https://example.com/v2",
-        ])
+        result = runner.invoke(
+            app,
+            [
+                "batch",
+                "https://example.com/v1",
+                "https://example.com/v2",
+            ],
+        )
 
     assert result.exit_code == 0
     assert "succeeded" in result.output

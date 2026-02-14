@@ -9,8 +9,7 @@ from __future__ import annotations
 import json
 import time
 from datetime import datetime
-from pathlib import Path
-from typing import Any, Callable, Optional
+from typing import Callable, Optional
 
 from notetaker.config import get_config
 from notetaker.models import (
@@ -18,8 +17,6 @@ from notetaker.models import (
     PipelineStage,
     ProcessingJob,
     ProcessingStatus,
-    StageProgress,
-    Transcript,
     VideoMetadata,
 )
 from notetaker.utils.logging import get_logger
@@ -208,12 +205,8 @@ class PipelineRunner:
                         "chroma.persist_directory",
                         str(data_dir / "chroma"),
                     ),
-                    collection_name=self.config.get(
-                        "chroma.collection_name", "notetaker_default"
-                    ),
-                    embedding_model=self.config.get(
-                        "embedding.model", "all-MiniLM-L6-v2"
-                    ),
+                    collection_name=self.config.get("chroma.collection_name", "notetaker_default"),
+                    embedding_model=self.config.get("embedding.model", "all-MiniLM-L6-v2"),
                     chunk_size_tokens=self.config.get("embedding.chunk_size_tokens", 250),
                     chunk_overlap_tokens=self.config.get("embedding.chunk_overlap_tokens", 50),
                 )
@@ -239,6 +232,7 @@ class PipelineRunner:
             if self.resume and notes_path.exists():
                 logger.info("Resume mode: using existing notes.")
                 from notetaker.pipeline.generate import load_notes
+
                 output = load_notes(notes_path)
             else:
                 cached = load_cached_notes(transcript, self.ollama_model, video_dir)
@@ -273,6 +267,7 @@ class PipelineRunner:
             # ----------------------------------------------------------------
             total_time = time.time() - self.total_start
             from notetaker.utils.validators import get_video_duration
+
             try:
                 duration = get_video_duration(wav_path)
             except Exception:

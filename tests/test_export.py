@@ -3,26 +3,22 @@
 from __future__ import annotations
 
 import json
-from pathlib import Path
 
-import pytest
-
-from notetaker.export.markdown import generate_markdown, export_markdown
-from notetaker.export.json_export import generate_json, export_json
-from notetaker.export.obsidian import generate_obsidian_markdown, export_obsidian, _extract_tags
+from notetaker.export.json_export import export_json, generate_json
+from notetaker.export.markdown import export_markdown, generate_markdown
 from notetaker.export.notion import (
-    generate_notion_blocks,
-    generate_notion_page_properties,
-    export_notion_json,
-    _heading_block,
-    _paragraph_block,
     _bulleted_list_item,
-    _to_do_block,
     _callout_block,
     _divider_block,
+    _heading_block,
+    _paragraph_block,
     _table_row,
+    _to_do_block,
+    export_notion_json,
+    generate_notion_blocks,
+    generate_notion_page_properties,
 )
-
+from notetaker.export.obsidian import _extract_tags, export_obsidian, generate_obsidian_markdown
 
 # ---------------------------------------------------------------------------
 # Markdown – generate_markdown
@@ -48,9 +44,7 @@ class TestGenerateMarkdown:
         assert "## Summary" in md
         assert "A tutorial covering Python functions, classes, and decorators." in md
 
-    def test_metadata_included_when_provided(
-        self, sample_generated_output, sample_metadata
-    ):
+    def test_metadata_included_when_provided(self, sample_generated_output, sample_metadata):
         """3. Metadata block appears when metadata is provided."""
         md = generate_markdown(sample_generated_output, metadata=sample_metadata)
         assert "Deep-Dive Video Note Taker" in md
@@ -101,7 +95,6 @@ class TestGenerateMarkdown:
         from notetaker.models import (
             ActionItem,
             GeneratedOutput,
-            KeyTimestamp,
             StructuredNotes,
         )
 
@@ -124,9 +117,7 @@ class TestGenerateMarkdown:
 class TestExportMarkdown:
     """Tests for export_markdown()."""
 
-    def test_writes_file_to_disk(
-        self, sample_generated_output, sample_metadata, tmp_data_dir
-    ):
+    def test_writes_file_to_disk(self, sample_generated_output, sample_metadata, tmp_data_dir):
         """8. export_markdown writes a .md file to the specified path."""
         out_path = tmp_data_dir / "output.md"
         export_markdown(sample_generated_output, sample_metadata, out_path)
@@ -160,9 +151,7 @@ class TestGenerateJson:
         assert "timestamps" in result
         assert "action_items" in result
 
-    def test_metadata_included_when_provided(
-        self, sample_generated_output, sample_metadata
-    ):
+    def test_metadata_included_when_provided(self, sample_generated_output, sample_metadata):
         """11. metadata key is present when metadata object is supplied."""
         result = generate_json(sample_generated_output, metadata=sample_metadata)
         assert "metadata" in result
@@ -212,9 +201,7 @@ class TestGenerateJson:
 class TestExportJson:
     """Tests for export_json()."""
 
-    def test_writes_valid_json_file(
-        self, sample_generated_output, sample_metadata, tmp_data_dir
-    ):
+    def test_writes_valid_json_file(self, sample_generated_output, sample_metadata, tmp_data_dir):
         """13. export_json writes a valid, parseable JSON file."""
         out_path = tmp_data_dir / "output.json"
         export_json(sample_generated_output, sample_metadata, out_path)
@@ -234,9 +221,7 @@ class TestExportJson:
         actual = json.loads(out_path.read_text(encoding="utf-8"))
         assert actual == expected
 
-    def test_roundtrip(
-        self, sample_generated_output, sample_metadata, tmp_data_dir
-    ):
+    def test_roundtrip(self, sample_generated_output, sample_metadata, tmp_data_dir):
         """15. Export then reload: loaded data matches original generate_json output."""
         out_path = tmp_data_dir / "roundtrip.json"
         export_json(sample_generated_output, sample_metadata, out_path)
@@ -385,9 +370,7 @@ class TestGenerateObsidianMarkdown:
 
     def test_extra_tags_appended(self, sample_generated_output):
         """Extra tags are added to frontmatter."""
-        md = generate_obsidian_markdown(
-            sample_generated_output, extra_tags=["python", "tutorial"]
-        )
+        md = generate_obsidian_markdown(sample_generated_output, extra_tags=["python", "tutorial"])
         assert "  - python" in md
         assert "  - tutorial" in md
 
@@ -414,7 +397,9 @@ class TestExportObsidian:
         assert "---" in content
         assert "# Python Programming Tutorial" in content
 
-    def test_creates_parent_directories(self, sample_generated_output, sample_metadata, tmp_data_dir):
+    def test_creates_parent_directories(
+        self, sample_generated_output, sample_metadata, tmp_data_dir
+    ):
         """export_obsidian creates intermediate parent directories."""
         nested = tmp_data_dir / "vault" / "notes" / "video.md"
         assert not nested.parent.exists()
@@ -521,7 +506,10 @@ class TestGenerateNotionBlocks:
         blocks = generate_notion_blocks(sample_generated_output)
         todo_blocks = [b for b in blocks if b["type"] == "to_do"]
         assert len(todo_blocks) == 1
-        assert "Practice writing Python functions" in todo_blocks[0]["to_do"]["rich_text"][0]["text"]["content"]
+        assert (
+            "Practice writing Python functions"
+            in todo_blocks[0]["to_do"]["rich_text"][0]["text"]["content"]
+        )
 
     def test_metadata_callout_with_metadata(self, sample_generated_output, sample_metadata):
         blocks = generate_notion_blocks(sample_generated_output, metadata=sample_metadata)

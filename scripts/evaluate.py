@@ -214,48 +214,61 @@ def main() -> None:
         description="Run full evaluation suite for Deep-Dive Video Note Taker."
     )
     parser.add_argument(
-        "--eval-dir", type=Path, required=True,
+        "--eval-dir",
+        type=Path,
+        required=True,
         help="Directory containing evaluation data (transcripts/, notes/, qa.json).",
     )
     parser.add_argument(
-        "--data-dir", type=str,
+        "--data-dir",
+        type=str,
         default=str(Path.home() / ".notetaker"),
         help="Base data directory for RAG evaluation.",
     )
     parser.add_argument(
-        "--output", type=Path,
+        "--output",
+        type=Path,
         help="Save full results as JSON.",
     )
     parser.add_argument(
-        "--skip-wer", action="store_true",
+        "--skip-wer",
+        action="store_true",
         help="Skip WER evaluation.",
     )
     parser.add_argument(
-        "--skip-rouge", action="store_true",
+        "--skip-rouge",
+        action="store_true",
         help="Skip ROUGE evaluation.",
     )
     parser.add_argument(
-        "--skip-bert", action="store_true",
+        "--skip-bert",
+        action="store_true",
         help="Skip BERTScore evaluation (slow without GPU).",
     )
     parser.add_argument(
-        "--skip-rag", action="store_true",
+        "--skip-rag",
+        action="store_true",
         help="Skip RAG evaluation (requires Ollama).",
     )
     parser.add_argument(
-        "--rag-only", action="store_true",
+        "--rag-only",
+        action="store_true",
         help="Only run RAG evaluation.",
     )
     parser.add_argument(
-        "--eval-set", type=str, default="qa.json",
+        "--eval-set",
+        type=str,
+        default="qa.json",
         help="Name of Q&A evaluation set file within eval-dir.",
     )
     parser.add_argument(
-        "--ollama-model", default="llama3.1:8b",
+        "--ollama-model",
+        default="llama3.1:8b",
         help="Ollama model for RAG evaluation.",
     )
     parser.add_argument(
-        "--bert-model", default="microsoft/deberta-xlarge-mnli",
+        "--bert-model",
+        default="microsoft/deberta-xlarge-mnli",
         help="BERTScore model type.",
     )
 

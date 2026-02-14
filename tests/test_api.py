@@ -10,9 +10,7 @@ from starlette.testclient import TestClient
 
 from notetaker.api.app import create_app
 from notetaker.api.tasks import JobManager
-from notetaker.config import AppConfig, get_config
 from notetaker.models import ProcessingJob, ProcessingStatus, VideoSummary
-
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -129,9 +127,7 @@ class TestNotesEndpoint:
         video_dir = test_config.data_dir / "videos" / video_id
         video_dir.mkdir(parents=True, exist_ok=True)
         notes_path = video_dir / "notes.json"
-        notes_path.write_text(
-            sample_generated_output.model_dump_json(), encoding="utf-8"
-        )
+        notes_path.write_text(sample_generated_output.model_dump_json(), encoding="utf-8")
 
         resp = client.get(f"/api/notes/{video_id}")
         assert resp.status_code == 200
@@ -156,9 +152,7 @@ class TestTranscriptEndpoint:
         video_dir = test_config.data_dir / "videos" / video_id
         video_dir.mkdir(parents=True, exist_ok=True)
         transcript_data = {"segments": [], "language": "en", "duration": 10.0}
-        (video_dir / "transcript.json").write_text(
-            json.dumps(transcript_data), encoding="utf-8"
-        )
+        (video_dir / "transcript.json").write_text(json.dumps(transcript_data), encoding="utf-8")
 
         resp = client.get(f"/api/transcript/{video_id}")
         assert resp.status_code == 200
@@ -178,7 +172,7 @@ class TestLibraryEndpoint:
     """Tests for GET /api/library."""
 
     @patch("notetaker.storage.library.VideoLibrary")
-    def test_library_returns_list(self, MockLibrary, client):
+    def test_library_returns_list(self, mock_library, client):
         mock_instance = MagicMock()
         mock_instance.list_videos.return_value = [
             VideoSummary(
@@ -189,7 +183,7 @@ class TestLibraryEndpoint:
                 has_notes=True,
             ),
         ]
-        MockLibrary.return_value = mock_instance
+        mock_library.return_value = mock_instance
 
         resp = client.get("/api/library")
         assert resp.status_code == 200
@@ -307,10 +301,10 @@ class TestDeleteEndpoint:
     """Tests for DELETE /api/video/{video_id}."""
 
     @patch("notetaker.storage.library.VideoLibrary")
-    def test_delete_success(self, MockLibrary, client):
+    def test_delete_success(self, mock_library, client):
         mock_instance = MagicMock()
         mock_instance.delete_video.return_value = True
-        MockLibrary.return_value = mock_instance
+        mock_library.return_value = mock_instance
 
         resp = client.delete("/api/video/vid_del")
         assert resp.status_code == 200
@@ -319,10 +313,10 @@ class TestDeleteEndpoint:
         assert body["video_id"] == "vid_del"
 
     @patch("notetaker.storage.library.VideoLibrary")
-    def test_delete_not_found(self, MockLibrary, client):
+    def test_delete_not_found(self, mock_library, client):
         mock_instance = MagicMock()
         mock_instance.delete_video.return_value = False
-        MockLibrary.return_value = mock_instance
+        mock_library.return_value = mock_instance
 
         resp = client.delete("/api/video/nope")
         assert resp.status_code == 404

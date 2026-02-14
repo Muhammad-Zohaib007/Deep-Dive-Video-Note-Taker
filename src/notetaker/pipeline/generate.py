@@ -28,12 +28,15 @@ from notetaker.utils.logging import get_logger
 logger = get_logger("generate")
 
 # System prompt from spec Section 4.5.2
-DEFAULT_SYSTEM_PROMPT = """You are a precise note-taking assistant. Given a video transcript, produce a JSON response with exactly three keys:
+DEFAULT_SYSTEM_PROMPT = """\
+You are a precise note-taking assistant. Given a video transcript, produce \
+a JSON response with exactly three keys:
 
 1. "structured_notes" - a hierarchical outline with:
    - "title": a concise title for the video
    - "summary": a 2-3 sentence summary
-   - "sections": an array of objects, each with "heading" (string) and "key_points" (array of strings)
+   - "sections": an array of objects, each with "heading" (string) \
+and "key_points" (array of strings)
 
 2. "timestamps" - an array of important moments with:
    - "time": time code in "MM:SS" format
@@ -143,11 +146,16 @@ def _fallback_extraction(raw_text: str, transcript: Transcript) -> GeneratedOutp
             heading = match[0] or match[1]
             sections.append(NoteSection(heading=heading.strip(), key_points=[]))
     else:
-        sections.append(NoteSection(
-            heading="Notes",
-            key_points=[line.strip("- ").strip() for line in raw_text.split("\n")
-                       if line.strip() and len(line.strip()) > 10][:20],
-        ))
+        sections.append(
+            NoteSection(
+                heading="Notes",
+                key_points=[
+                    line.strip("- ").strip()
+                    for line in raw_text.split("\n")
+                    if line.strip() and len(line.strip()) > 10
+                ][:20],
+            )
+        )
 
     # Generate basic timestamps from transcript segments
     timestamps: list[KeyTimestamp] = []
@@ -157,10 +165,12 @@ def _fallback_extraction(raw_text: str, transcript: Transcript) -> GeneratedOutp
             seg = transcript.segments[i]
             minutes = int(seg.start) // 60
             seconds = int(seg.start) % 60
-            timestamps.append(KeyTimestamp(
-                time=f"{minutes:02d}:{seconds:02d}",
-                label=seg.text[:60],
-            ))
+            timestamps.append(
+                KeyTimestamp(
+                    time=f"{minutes:02d}:{seconds:02d}",
+                    label=seg.text[:60],
+                )
+            )
 
     return GeneratedOutput(
         structured_notes=StructuredNotes(
@@ -185,10 +195,12 @@ def _dict_to_generated_output(data: dict[str, Any]) -> GeneratedOutput:
             key_points = [str(p) for p in key_points if p]
         else:
             key_points = [str(key_points)]
-        sections.append(NoteSection(
-            heading=str(s.get("heading", "")),
-            key_points=key_points,
-        ))
+        sections.append(
+            NoteSection(
+                heading=str(s.get("heading", "")),
+                key_points=key_points,
+            )
+        )
 
     # LLMs sometimes return summary as a list of bullet points — normalise to string
     raw_summary = notes_data.get("summary", "")
@@ -204,19 +216,23 @@ def _dict_to_generated_output(data: dict[str, Any]) -> GeneratedOutput:
     # Parse timestamps
     timestamps = []
     for t in data.get("timestamps", []):
-        timestamps.append(KeyTimestamp(
-            time=t.get("time", "00:00"),
-            label=t.get("label", ""),
-        ))
+        timestamps.append(
+            KeyTimestamp(
+                time=t.get("time", "00:00"),
+                label=t.get("label", ""),
+            )
+        )
 
     # Parse action items
     action_items = []
     for a in data.get("action_items", []):
-        action_items.append(ActionItem(
-            action=a.get("action", ""),
-            assignee=a.get("assignee"),
-            timestamp=a.get("timestamp"),
-        ))
+        action_items.append(
+            ActionItem(
+                action=a.get("action", ""),
+                assignee=a.get("assignee"),
+                timestamp=a.get("timestamp"),
+            )
+        )
 
     return GeneratedOutput(
         structured_notes=structured_notes,

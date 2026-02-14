@@ -14,15 +14,14 @@ from __future__ import annotations
 import json
 
 from fastapi import APIRouter, BackgroundTasks, File, HTTPException, UploadFile
-from fastapi.responses import PlainTextResponse, JSONResponse
+from fastapi.responses import JSONResponse, PlainTextResponse
 
 from notetaker.api.tasks import JobManager
 from notetaker.config import get_config
 from notetaker.models import (
-    GeneratedOutput,
     OutputFormat,
-    ProcessRequest,
     ProcessingJob,
+    ProcessRequest,
     QueryRequest,
     QueryResponse,
     VideoSummary,
@@ -51,7 +50,9 @@ async def process_video(
         source=request.url,
         whisper_model=request.whisper_model.value,
         ollama_model=request.ollama_model,
-        output_format=request.output_format.value if hasattr(request, 'output_format') and request.output_format else "json",
+        output_format=request.output_format.value
+        if hasattr(request, "output_format") and request.output_format
+        else "json",
     )
 
     return job
@@ -65,12 +66,12 @@ async def process_upload(
     ollama_model: str = "llama3.1:8b",
 ) -> ProcessingJob:
     """Upload a video file for processing."""
-    from notetaker.models import WhisperModel as WM
+    from notetaker.models import WhisperModel
 
     config = get_config()
 
     # Validate whisper_model is a valid enum value
-    valid_models = {m.value for m in WM}
+    valid_models = {m.value for m in WhisperModel}
     if whisper_model not in valid_models:
         raise HTTPException(
             400,

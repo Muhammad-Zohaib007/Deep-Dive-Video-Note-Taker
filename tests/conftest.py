@@ -42,12 +42,14 @@ def tmp_data_dir(tmp_path):
 @pytest.fixture
 def test_config(tmp_data_dir):
     """Get a test config pointing to temporary directories."""
-    config = get_config(overrides={
-        "data_dir": str(tmp_data_dir),
-        "output_dir": str(tmp_data_dir / "outputs"),
-        "chroma": {"persist_directory": str(tmp_data_dir / "chroma")},
-        "logging": {"log_dir": str(tmp_data_dir / "logs")},
-    })
+    config = get_config(
+        overrides={
+            "data_dir": str(tmp_data_dir),
+            "output_dir": str(tmp_data_dir / "outputs"),
+            "chroma": {"persist_directory": str(tmp_data_dir / "chroma")},
+            "logging": {"log_dir": str(tmp_data_dir / "logs")},
+        }
+    )
     return config
 
 

@@ -20,6 +20,7 @@ logger = get_logger("profiler")
 @dataclass
 class TimingRecord:
     """A single timing measurement."""
+
     name: str
     duration_seconds: float
     memory_before_mb: Optional[float] = None
@@ -35,6 +36,7 @@ class TimingRecord:
 @dataclass
 class ProfilingReport:
     """Aggregated profiling data from a pipeline run."""
+
     records: list[TimingRecord] = field(default_factory=list)
     total_seconds: float = 0.0
 
@@ -50,7 +52,9 @@ class ProfilingReport:
             mem_str = ""
             if rec.memory_delta_mb is not None:
                 mem_str = f"  (mem: {rec.memory_delta_mb:+.1f} MB)"
-            lines.append(f"  {rec.name:<30s} {rec.duration_seconds:>7.2f}s  ({pct:>5.1f}%){mem_str}")
+            lines.append(
+                f"  {rec.name:<30s} {rec.duration_seconds:>7.2f}s  ({pct:>5.1f}%){mem_str}"
+            )
         lines.append("-" * 60)
         lines.append(f"  {'TOTAL':<30s} {self.total_seconds:>7.2f}s")
         lines.append("=" * 60)
@@ -64,9 +68,15 @@ class ProfilingReport:
                 {
                     "name": r.name,
                     "duration_seconds": round(r.duration_seconds, 3),
-                    "memory_before_mb": round(r.memory_before_mb, 1) if r.memory_before_mb is not None else None,
-                    "memory_after_mb": round(r.memory_after_mb, 1) if r.memory_after_mb is not None else None,
-                    "memory_delta_mb": round(r.memory_delta_mb, 1) if r.memory_delta_mb is not None else None,
+                    "memory_before_mb": round(r.memory_before_mb, 1)
+                    if r.memory_before_mb is not None
+                    else None,
+                    "memory_after_mb": round(r.memory_after_mb, 1)
+                    if r.memory_after_mb is not None
+                    else None,
+                    "memory_delta_mb": round(r.memory_delta_mb, 1)
+                    if r.memory_delta_mb is not None
+                    else None,
                 }
                 for r in self.records
             ],
@@ -77,6 +87,7 @@ def _get_memory_mb() -> Optional[float]:
     """Get current process memory usage in MB."""
     try:
         import psutil
+
         process = psutil.Process()
         return process.memory_info().rss / (1024 * 1024)
     except ImportError:
@@ -144,6 +155,7 @@ def timed(func: Callable) -> Callable:
 
     If profiling is active, also records to the profiling report.
     """
+
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
         name = func.__qualname__

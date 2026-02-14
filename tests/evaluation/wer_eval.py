@@ -28,13 +28,15 @@ def compute_wer(reference: str, hypothesis: str) -> dict[str, float]:
         Dictionary with wer, mer, wil, wip metrics.
     """
     # Normalize text
-    transform = jiwer.Compose([
-        jiwer.ToLowerCase(),
-        jiwer.RemoveMultipleSpaces(),
-        jiwer.Strip(),
-        jiwer.RemovePunctuation(),
-        jiwer.ReduceToListOfListOfWords(),
-    ])
+    transform = jiwer.Compose(
+        [
+            jiwer.ToLowerCase(),
+            jiwer.RemoveMultipleSpaces(),
+            jiwer.Strip(),
+            jiwer.RemovePunctuation(),
+            jiwer.ReduceToListOfListOfWords(),
+        ]
+    )
 
     measures = jiwer.compute_measures(
         reference,
@@ -180,7 +182,11 @@ def print_report(results: dict, aggregate: dict) -> None:
             print(f"    MER:  {metrics['mer']:.2%}")
             print(f"    WIL:  {metrics['wil']:.2%}")
             print(f"    WIP:  {metrics['wip']:.2%}")
-            print(f"    Edits: {metrics['substitutions']}S {metrics['deletions']}D {metrics['insertions']}I {metrics['hits']}H")
+            subs = metrics['substitutions']
+            dels = metrics['deletions']
+            ins = metrics['insertions']
+            hits = metrics['hits']
+            print(f"    Edits: {subs}S {dels}D {ins}I {hits}H")
 
     print("\n" + "-" * 70)
     print("AGGREGATE:")

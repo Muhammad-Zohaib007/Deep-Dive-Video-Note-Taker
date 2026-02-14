@@ -5,7 +5,7 @@ from __future__ import annotations
 import threading
 from typing import Optional
 
-from notetaker.models import ProcessingJob, ProcessingStatus, PipelineStage
+from notetaker.models import PipelineStage, ProcessingJob, ProcessingStatus
 from notetaker.utils.logging import get_logger
 
 logger = get_logger("tasks")

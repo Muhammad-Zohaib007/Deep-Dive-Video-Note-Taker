@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import subprocess
-from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -15,10 +13,10 @@ from notetaker.pipeline.audio import (
     extract_audio,
 )
 
-
 # ---------------------------------------------------------------------------
 # _generate_video_id
 # ---------------------------------------------------------------------------
+
 
 class TestGenerateVideoId:
     """Tests for _generate_video_id."""
@@ -58,6 +56,7 @@ class TestGenerateVideoId:
 # ---------------------------------------------------------------------------
 # _convert_to_wav
 # ---------------------------------------------------------------------------
+
 
 class TestConvertToWav:
     """Tests for _convert_to_wav."""
@@ -112,6 +111,7 @@ class TestConvertToWav:
 # ---------------------------------------------------------------------------
 # _download_youtube_audio
 # ---------------------------------------------------------------------------
+
 
 class TestDownloadYoutubeAudio:
     """Tests for _download_youtube_audio."""
@@ -169,6 +169,7 @@ class TestDownloadYoutubeAudio:
 # extract_audio
 # ---------------------------------------------------------------------------
 
+
 class TestExtractAudio:
     """Tests for the main extract_audio entry point."""
 
@@ -220,9 +221,7 @@ class TestExtractAudio:
         assert result_title == local_file.stem
 
     @patch("notetaker.pipeline.audio.check_ffmpeg", return_value=False)
-    def test_raises_runtime_error_when_ffmpeg_not_installed(
-        self, mock_check_ffmpeg, tmp_data_dir
-    ):
+    def test_raises_runtime_error_when_ffmpeg_not_installed(self, mock_check_ffmpeg, tmp_data_dir):
         """RuntimeError is raised early when ffmpeg is not available."""
         with pytest.raises(RuntimeError, match="FFmpeg is required"):
             extract_audio(
@@ -231,9 +230,7 @@ class TestExtractAudio:
             )
 
     @patch("notetaker.pipeline.audio.check_ffmpeg", return_value=True)
-    def test_raises_file_not_found_for_missing_local_file(
-        self, mock_check_ffmpeg, tmp_data_dir
-    ):
+    def test_raises_file_not_found_for_missing_local_file(self, mock_check_ffmpeg, tmp_data_dir):
         """FileNotFoundError is raised when the local source file does not exist."""
         with pytest.raises(FileNotFoundError, match="File not found"):
             extract_audio(
@@ -263,9 +260,7 @@ class TestExtractAudio:
             )
 
     @patch("notetaker.pipeline.audio.check_ffmpeg", return_value=True)
-    def test_uses_cache_when_wav_already_exists(
-        self, mock_check_ffmpeg, tmp_data_dir
-    ):
+    def test_uses_cache_when_wav_already_exists(self, mock_check_ffmpeg, tmp_data_dir):
         """If audio.wav already exists in the video directory, it is returned directly."""
         video_id = "cached_video"
         video_dir = tmp_data_dir / "videos" / video_id

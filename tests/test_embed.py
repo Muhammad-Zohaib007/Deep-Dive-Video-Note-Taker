@@ -22,7 +22,6 @@ from notetaker.pipeline.embed import (
     store_in_chromadb,
 )
 
-
 # ── _estimate_tokens ─────────────────────────────────────────────────────────
 
 
@@ -311,9 +310,7 @@ class TestEmbedAndStore:
 
     @patch("notetaker.pipeline.embed.store_in_chromadb")
     @patch("notetaker.pipeline.embed.embed_chunks")
-    def test_orchestrates_all_steps(
-        self, mock_embed, mock_store, sample_transcript
-    ):
+    def test_orchestrates_all_steps(self, mock_embed, mock_store, sample_transcript):
         """embed_and_store should chunk, embed, then store."""
         mock_embed.return_value = [[0.1, 0.2, 0.3]]
 

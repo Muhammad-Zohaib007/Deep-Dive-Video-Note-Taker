@@ -37,7 +37,7 @@ def compute_bert_score(
     """
     from bert_score import score as bert_score_fn
 
-    P, R, F1 = bert_score_fn(
+    prec, rec, f1 = bert_score_fn(
         hypotheses,
         references,
         model_type=model_type,
@@ -47,9 +47,9 @@ def compute_bert_score(
     )
 
     return {
-        "precision": [round(p.item(), 4) for p in P],
-        "recall": [round(r.item(), 4) for r in R],
-        "f1": [round(f.item(), 4) for f in F1],
+        "precision": [round(p.item(), 4) for p in prec],
+        "recall": [round(r.item(), 4) for r in rec],
+        "f1": [round(f.item(), 4) for f in f1],
     }
 
 
@@ -245,7 +245,8 @@ def main() -> None:
     parser.add_argument("--reference-dir", type=Path, help="Directory of references.")
     parser.add_argument("--hypothesis-dir", type=Path, help="Directory of hypotheses.")
     parser.add_argument(
-        "--model", default="microsoft/deberta-xlarge-mnli",
+        "--model",
+        default="microsoft/deberta-xlarge-mnli",
         help="BERTScore model type.",
     )
     parser.add_argument("--output", type=Path, help="Save results as JSON.")

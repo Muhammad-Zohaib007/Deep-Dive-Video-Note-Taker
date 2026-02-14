@@ -98,9 +98,7 @@ def _table_row(cells: list[str]) -> dict[str, Any]:
     return {
         "type": "table_row",
         "table_row": {
-            "cells": [
-                [{"type": "text", "text": {"content": cell}}] for cell in cells
-            ],
+            "cells": [[{"type": "text", "text": {"content": cell}}] for cell in cells],
         },
     }
 
@@ -157,16 +155,18 @@ def generate_notion_blocks(
         for ts in output.timestamps:
             table_children.append(_table_row([ts.time, ts.label]))
 
-        blocks.append({
-            "object": "block",
-            "type": "table",
-            "table": {
-                "table_width": 2,
-                "has_column_header": True,
-                "has_row_header": False,
-                "children": table_children,
-            },
-        })
+        blocks.append(
+            {
+                "object": "block",
+                "type": "table",
+                "table": {
+                    "table_width": 2,
+                    "has_column_header": True,
+                    "has_row_header": False,
+                    "children": table_children,
+                },
+            }
+        )
 
     # --- Action Items ---
     if output.action_items:
@@ -210,13 +210,9 @@ def generate_notion_page_properties(
     if metadata:
         if metadata.source_url:
             properties["Source URL"] = {"url": metadata.source_url}
-        properties["Duration (min)"] = {
-            "number": round(metadata.duration_seconds / 60, 1)
-        }
+        properties["Duration (min)"] = {"number": round(metadata.duration_seconds / 60, 1)}
         properties["Video ID"] = {
-            "rich_text": [
-                {"type": "text", "text": {"content": metadata.video_id}}
-            ]
+            "rich_text": [{"type": "text", "text": {"content": metadata.video_id}}]
         }
 
     return properties

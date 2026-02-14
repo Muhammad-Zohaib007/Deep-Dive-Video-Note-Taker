@@ -5,19 +5,16 @@ from __future__ import annotations
 import time
 from unittest.mock import patch
 
-import pytest
-
 from notetaker.utils.profiler import (
     ProfilingReport,
     TimingRecord,
+    _get_memory_mb,
     get_active_report,
     profile_stage,
     start_profiling,
     stop_profiling,
     timed,
-    _get_memory_mb,
 )
-
 
 # ---------------------------------------------------------------------------
 # TimingRecord
@@ -81,12 +78,14 @@ class TestProfilingReport:
 
     def test_summary_with_memory(self):
         report = ProfilingReport()
-        report.add(TimingRecord(
-            name="embed",
-            duration_seconds=3.0,
-            memory_before_mb=100.0,
-            memory_after_mb=200.0,
-        ))
+        report.add(
+            TimingRecord(
+                name="embed",
+                duration_seconds=3.0,
+                memory_before_mb=100.0,
+                memory_after_mb=200.0,
+            )
+        )
         text = report.summary()
         assert "mem:" in text
         assert "+100.0 MB" in text
@@ -102,12 +101,14 @@ class TestProfilingReport:
 
     def test_as_dict_with_memory(self):
         report = ProfilingReport()
-        report.add(TimingRecord(
-            name="s",
-            duration_seconds=1.0,
-            memory_before_mb=50.0,
-            memory_after_mb=75.0,
-        ))
+        report.add(
+            TimingRecord(
+                name="s",
+                duration_seconds=1.0,
+                memory_before_mb=50.0,
+                memory_after_mb=75.0,
+            )
+        )
         d = report.as_dict()
         assert d["stages"][0]["memory_before_mb"] == 50.0
         assert d["stages"][0]["memory_after_mb"] == 75.0

@@ -83,8 +83,7 @@ def download_model(
     model_name = model_name.lower()
     if model_name not in _MODEL_URLS:
         raise ValueError(
-            f"Unknown whisper model '{model_name}'. "
-            f"Choose from: {', '.join(_MODEL_URLS.keys())}"
+            f"Unknown whisper model '{model_name}'. Choose from: {', '.join(_MODEL_URLS.keys())}"
         )
 
     model_path = get_model_path(model_name, models_dir)

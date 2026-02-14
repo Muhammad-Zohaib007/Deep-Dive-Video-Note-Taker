@@ -20,10 +20,10 @@ from notetaker.pipeline.qa import (
     retrieve_chunks,
 )
 
-
 # ---------------------------------------------------------------------------
 # Helpers / shared fixtures
 # ---------------------------------------------------------------------------
+
 
 @pytest.fixture
 def chromadb_results() -> dict:
@@ -71,6 +71,7 @@ def empty_chromadb_results() -> dict:
 # _format_context
 # ---------------------------------------------------------------------------
 
+
 class TestFormatContext:
     """Tests for _format_context."""
 
@@ -110,6 +111,7 @@ class TestFormatContext:
 # _format_sources
 # ---------------------------------------------------------------------------
 
+
 class TestFormatSources:
     """Tests for _format_sources."""
 
@@ -132,7 +134,7 @@ class TestFormatSources:
         """similarity should equal round(1 - distance, 4)."""
         sources = _format_sources(chromadb_results)
 
-        assert sources[0]["similarity"] == round(1 - 0.1, 4)   # 0.9
+        assert sources[0]["similarity"] == round(1 - 0.1, 4)  # 0.9
         assert sources[1]["similarity"] == round(1 - 0.25, 4)  # 0.75
 
     def test_text_truncated_to_200_chars(self):
@@ -165,6 +167,7 @@ class TestFormatSources:
 # ---------------------------------------------------------------------------
 # retrieve_chunks  (mocked chromadb + SentenceTransformer)
 # ---------------------------------------------------------------------------
+
 
 class TestRetrieveChunks:
     """Tests for retrieve_chunks with mocked dependencies."""
@@ -218,6 +221,7 @@ class TestRetrieveChunks:
 # retrieve_across_library  (mocked chromadb + SentenceTransformer)
 # ---------------------------------------------------------------------------
 
+
 class TestRetrieveAcrossLibrary:
     """Tests for retrieve_across_library with mocked dependencies."""
 
@@ -264,13 +268,12 @@ class TestRetrieveAcrossLibrary:
 # answer_question
 # ---------------------------------------------------------------------------
 
+
 class TestAnswerQuestion:
     """Tests for the full answer_question RAG pipeline."""
 
     @patch("notetaker.pipeline.qa.retrieve_chunks")
-    def test_returns_query_response_on_success(
-        self, mock_retrieve, chromadb_results, tmp_data_dir
-    ):
+    def test_returns_query_response_on_success(self, mock_retrieve, chromadb_results, tmp_data_dir):
         """A successful round-trip should return a QueryResponse with answer and sources."""
         mock_retrieve.return_value = chromadb_results
 
@@ -336,16 +339,12 @@ class TestAnswerQuestion:
                     )
 
     @patch("notetaker.pipeline.qa.retrieve_chunks")
-    def test_ollama_called_with_system_prompt(
-        self, mock_retrieve, chromadb_results, tmp_data_dir
-    ):
+    def test_ollama_called_with_system_prompt(self, mock_retrieve, chromadb_results, tmp_data_dir):
         """The LLM should receive the RAG_SYSTEM_PROMPT as the system message."""
         mock_retrieve.return_value = chromadb_results
 
         mock_client_instance = MagicMock()
-        mock_client_instance.chat.return_value = [
-            {"message": {"content": "Answer."}}
-        ]
+        mock_client_instance.chat.return_value = [{"message": {"content": "Answer."}}]
 
         with patch("notetaker.pipeline.qa.ollama_sdk", create=True) as mock_ollama:
             mock_ollama.Client.return_value = mock_client_instance

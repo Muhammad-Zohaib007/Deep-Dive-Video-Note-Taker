@@ -77,9 +77,12 @@ def _download_youtube_audio(
         "yt-dlp",
         "--no-playlist",
         "--extract-audio",
-        "--audio-format", "wav",
-        "--audio-quality", "0",
-        "--output", output_template,
+        "--audio-format",
+        "wav",
+        "--audio-quality",
+        "0",
+        "--output",
+        output_template,
         "--no-overwrites",
         "--quiet",
         "--progress",
@@ -98,9 +101,7 @@ def _download_youtube_audio(
         if result.returncode != 0:
             raise RuntimeError(f"yt-dlp failed: {result.stderr}")
     except FileNotFoundError:
-        raise RuntimeError(
-            "yt-dlp not found. Install it: pip install yt-dlp"
-        )
+        raise RuntimeError("yt-dlp not found. Install it: pip install yt-dlp")
 
     # Find the downloaded file
     downloaded_files = list(output_dir.glob(f"{video_id}_raw.*"))
@@ -152,12 +153,17 @@ def _convert_to_wav(
     """
     cmd = [
         "ffmpeg",
-        "-i", str(input_path),
-        "-ar", str(sample_rate),
-        "-ac", str(channels),
-        "-f", "wav",
+        "-i",
+        str(input_path),
+        "-ar",
+        str(sample_rate),
+        "-ac",
+        str(channels),
+        "-f",
+        "wav",
         "-y",  # overwrite
-        "-loglevel", "error",
+        "-loglevel",
+        "error",
         str(output_path),
     ]
 

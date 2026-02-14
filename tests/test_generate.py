@@ -8,16 +8,13 @@ and save/load roundtrip.
 from __future__ import annotations
 
 import json
-from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
 
 from notetaker.models import (
-    ActionItem,
     GeneratedOutput,
     KeyTimestamp,
-    NoteSection,
     StructuredNotes,
 )
 from notetaker.pipeline.generate import (
@@ -34,10 +31,10 @@ from notetaker.pipeline.generate import (
     save_notes,
 )
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _make_valid_dict() -> dict:
     """Return a fully-populated dict matching the LLM output schema."""
@@ -71,6 +68,7 @@ def _make_valid_dict() -> dict:
 # 1 & 2 — _build_user_prompt
 # ---------------------------------------------------------------------------
 
+
 class TestBuildUserPrompt:
     """Tests for _build_user_prompt."""
 
@@ -101,6 +99,7 @@ class TestBuildUserPrompt:
 # 3–6 — _parse_llm_json
 # ---------------------------------------------------------------------------
 
+
 class TestParseLlmJson:
     """Tests for _parse_llm_json."""
 
@@ -127,7 +126,7 @@ class TestParseLlmJson:
     def test_json_embedded_in_text(self):
         """Test 5: extract JSON object embedded in surrounding prose."""
         inner = {"title": "Embedded"}
-        raw = f'Here is the result:\n{json.dumps(inner)}\nHope this helps!'
+        raw = f"Here is the result:\n{json.dumps(inner)}\nHope this helps!"
         result = _parse_llm_json(raw)
         assert result == inner
 
@@ -150,6 +149,7 @@ class TestParseLlmJson:
 # ---------------------------------------------------------------------------
 # 7 & 8 — _fallback_extraction
 # ---------------------------------------------------------------------------
+
 
 class TestFallbackExtraction:
     """Tests for _fallback_extraction."""
@@ -202,6 +202,7 @@ class TestFallbackExtraction:
 # ---------------------------------------------------------------------------
 # 9 & 10 — _dict_to_generated_output
 # ---------------------------------------------------------------------------
+
 
 class TestDictToGeneratedOutput:
     """Tests for _dict_to_generated_output."""
@@ -268,6 +269,7 @@ class TestDictToGeneratedOutput:
 # 11–13 — generate_notes (mocked ollama)
 # ---------------------------------------------------------------------------
 
+
 class TestGenerateNotes:
     """Tests for generate_notes with mocked ollama.Client.
 
@@ -292,12 +294,12 @@ class TestGenerateNotes:
         return chunks
 
     @patch("ollama.Client")
-    def test_success_with_mocked_ollama(self, MockClient, sample_transcript):
-        """Test 11: generate_notes returns valid output from mocked ollama."""
+    def test_success_with_mocked_ollama(self, mock_ollama_client, sample_transcript):
+        """generate_notes returns valid output from mocked ollama."""
         valid_json = json.dumps(_make_valid_dict())
         mock_client = MagicMock()
         mock_client.chat.return_value = self._mock_streaming_response(valid_json)
-        MockClient.return_value = mock_client
+        mock_ollama_client.return_value = mock_client
 
         result = generate_notes(sample_transcript)
 
@@ -306,17 +308,16 @@ class TestGenerateNotes:
         assert len(result.timestamps) == 2
         assert len(result.action_items) == 2
 
-        # Verify ollama.Client was constructed and chat was called
-        MockClient.assert_called_once()
+        mock_ollama_client.assert_called_once()
         mock_client.chat.assert_called_once()
 
     @patch("ollama.Client")
-    def test_falls_back_on_json_parse_failure(self, MockClient, sample_transcript):
-        """Test 12: generate_notes falls back to regex extraction on bad JSON."""
+    def test_falls_back_on_json_parse_failure(self, mock_ollama_client, sample_transcript):
+        """generate_notes falls back to regex extraction on bad JSON."""
         bad_content = "Here are the notes:\n## Summary\nSome notes about the video."
         mock_client = MagicMock()
         mock_client.chat.return_value = self._mock_streaming_response(bad_content)
-        MockClient.return_value = mock_client
+        mock_ollama_client.return_value = mock_client
 
         result = generate_notes(sample_transcript)
 
@@ -325,11 +326,11 @@ class TestGenerateNotes:
         assert result.structured_notes.title == "Video Notes"  # fallback default
 
     @patch("ollama.Client")
-    def test_raises_runtime_error_on_ollama_exception(self, MockClient, sample_transcript):
-        """Test 13: generate_notes raises RuntimeError when ollama fails."""
+    def test_raises_runtime_error_on_ollama_exception(self, mock_ollama_client, sample_transcript):
+        """generate_notes raises RuntimeError when ollama fails."""
         mock_client = MagicMock()
         mock_client.chat.side_effect = ConnectionError("Ollama server unreachable")
-        MockClient.return_value = mock_client
+        mock_ollama_client.return_value = mock_client
 
         with pytest.raises(RuntimeError, match="Note generation failed"):
             generate_notes(sample_transcript)
@@ -338,6 +339,7 @@ class TestGenerateNotes:
 # ---------------------------------------------------------------------------
 # 14 — get_cache_key
 # ---------------------------------------------------------------------------
+
 
 class TestGetCacheKey:
     """Tests for get_cache_key."""
@@ -370,6 +372,7 @@ class TestGetCacheKey:
 # ---------------------------------------------------------------------------
 # 15 — save_notes / load_notes roundtrip
 # ---------------------------------------------------------------------------
+
 
 class TestSaveLoadRoundtrip:
     """Tests for save_notes and load_notes."""
@@ -421,6 +424,7 @@ class TestSaveLoadRoundtrip:
 # Miscellaneous / SYSTEM_PROMPT sanity
 # ---------------------------------------------------------------------------
 
+
 class TestSystemPrompt:
     """Basic sanity checks on the SYSTEM_PROMPT constant."""
 
@@ -435,6 +439,7 @@ class TestSystemPrompt:
 # ---------------------------------------------------------------------------
 # 16–20 — _load_custom_prompt
 # ---------------------------------------------------------------------------
+
 
 class TestLoadCustomPrompt:
     """Tests for _load_custom_prompt."""

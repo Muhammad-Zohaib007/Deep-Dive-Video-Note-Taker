@@ -37,6 +37,7 @@ def create_app() -> FastAPI:
 
     # Register routes
     from notetaker.api.routes import router
+
     app.include_router(router, prefix="/api")
 
     # Serve static files and templates

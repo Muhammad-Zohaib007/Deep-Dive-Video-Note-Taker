@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import re
 import time
-from typing import Optional
 
 from notetaker.models import Transcript, TranscriptChunk, TranscriptSegment
 from notetaker.utils.logging import get_logger
@@ -26,11 +25,13 @@ def _estimate_tokens(text: str) -> int:
 
 def _split_sentences(text: str) -> list[str]:
     """Split text into sentences using regex."""
-    sentences = re.split(r'(?<=[.!?])\s+', text)
+    sentences = re.split(r"(?<=[.!?])\s+", text)
     return [s.strip() for s in sentences if s.strip()]
 
 
-def _find_segment_time(segments: list[TranscriptSegment], char_offset: int, full_text: str) -> float:
+def _find_segment_time(
+    segments: list[TranscriptSegment], char_offset: int, full_text: str
+) -> float:
     """Find the timestamp corresponding to a character offset in the full text."""
     current_offset = 0
     for seg in segments:
@@ -98,21 +99,19 @@ def chunk_transcript(
             chunk_start_offset = sentence_offsets[sent_idx]
             chunk_end_offset = chunk_start_offset + len(chunk_text)
 
-            start_time = _find_segment_time(
-                transcript.segments, chunk_start_offset, full_text
-            )
-            end_time = _find_segment_time(
-                transcript.segments, chunk_end_offset, full_text
-            )
+            start_time = _find_segment_time(transcript.segments, chunk_start_offset, full_text)
+            end_time = _find_segment_time(transcript.segments, chunk_end_offset, full_text)
 
-            chunks.append(TranscriptChunk(
-                chunk_index=chunk_index,
-                text=chunk_text,
-                start_time=round(start_time, 2),
-                end_time=round(end_time, 2),
-                video_id=video_id,
-                token_count=current_tokens,
-            ))
+            chunks.append(
+                TranscriptChunk(
+                    chunk_index=chunk_index,
+                    text=chunk_text,
+                    start_time=round(start_time, 2),
+                    end_time=round(end_time, 2),
+                    video_id=video_id,
+                    token_count=current_tokens,
+                )
+            )
             chunk_index += 1
 
             # Overlap: keep last N tokens worth of sentences
@@ -141,23 +140,23 @@ def chunk_transcript(
         chunk_start_offset = sentence_offsets[sent_idx] if sent_idx < len(sentence_offsets) else 0
         chunk_end_offset = chunk_start_offset + len(chunk_text)
 
-        start_time = _find_segment_time(
-            transcript.segments, chunk_start_offset, full_text
-        )
-        end_time = _find_segment_time(
-            transcript.segments, chunk_end_offset, full_text
+        start_time = _find_segment_time(transcript.segments, chunk_start_offset, full_text)
+        end_time = _find_segment_time(transcript.segments, chunk_end_offset, full_text)
+
+        chunks.append(
+            TranscriptChunk(
+                chunk_index=chunk_index,
+                text=chunk_text,
+                start_time=round(start_time, 2),
+                end_time=round(end_time, 2),
+                video_id=video_id,
+                token_count=current_tokens,
+            )
         )
 
-        chunks.append(TranscriptChunk(
-            chunk_index=chunk_index,
-            text=chunk_text,
-            start_time=round(start_time, 2),
-            end_time=round(end_time, 2),
-            video_id=video_id,
-            token_count=current_tokens,
-        ))
-
-    logger.info(f"Chunked transcript into {len(chunks)} chunks (target: {chunk_size_tokens} tokens)")
+    logger.info(
+        f"Chunked transcript into {len(chunks)} chunks (target: {chunk_size_tokens} tokens)"
+    )
     return chunks
 
 
@@ -187,8 +186,7 @@ def embed_chunks(
 
     elapsed = time.time() - start_time
     logger.info(
-        f"Embedding complete: {len(texts)} chunks, "
-        f"{embeddings.shape[1]} dimensions, {elapsed:.2f}s"
+        f"Embedding complete: {len(texts)} chunks, {embeddings.shape[1]} dimensions, {elapsed:.2f}s"
     )
 
     return embeddings.tolist()
@@ -261,7 +259,8 @@ def embed_and_store(
     """
     # Step 1: Chunk
     chunks = chunk_transcript(
-        transcript, video_id,
+        transcript,
+        video_id,
         chunk_size_tokens=chunk_size_tokens,
         chunk_overlap_tokens=chunk_overlap_tokens,
     )

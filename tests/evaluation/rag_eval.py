@@ -12,16 +12,15 @@ from __future__ import annotations
 
 import argparse
 import json
-import sys
 from pathlib import Path
 from typing import Any, Optional
 
 from rouge_score import rouge_scorer
 
-
 # ---------------------------------------------------------------------------
 # Data structures
 # ---------------------------------------------------------------------------
+
 
 def load_eval_set(path: Path) -> list[dict[str, Any]]:
     """Load a Q&A evaluation set.
@@ -56,6 +55,7 @@ def load_eval_set(path: Path) -> list[dict[str, Any]]:
 # ---------------------------------------------------------------------------
 # Retrieval evaluation
 # ---------------------------------------------------------------------------
+
 
 def evaluate_retrieval(
     sources: list[dict],
@@ -123,6 +123,7 @@ def _parse_timestamp(ts: str) -> float:
 # Answer quality evaluation
 # ---------------------------------------------------------------------------
 
+
 def evaluate_answer(
     generated_answer: str,
     reference_answer: str,
@@ -183,6 +184,7 @@ def evaluate_answer(
 # Full pipeline evaluation
 # ---------------------------------------------------------------------------
 
+
 def run_evaluation(
     eval_set: list[dict[str, Any]],
     data_dir: str,
@@ -236,25 +238,27 @@ def run_evaluation(
             retrieval_metrics = evaluate_retrieval(response.sources, expected_ts)
 
             # Evaluate answer
-            answer_metrics = evaluate_answer(
-                response.answer, ref_answer, expected_kw
+            answer_metrics = evaluate_answer(response.answer, ref_answer, expected_kw)
+
+            results.append(
+                {
+                    "question": question,
+                    "video_id": video_id,
+                    "generated_answer": response.answer,
+                    "reference_answer": ref_answer,
+                    "retrieval": retrieval_metrics,
+                    "answer": answer_metrics,
+                }
             )
 
-            results.append({
-                "question": question,
-                "video_id": video_id,
-                "generated_answer": response.answer,
-                "reference_answer": ref_answer,
-                "retrieval": retrieval_metrics,
-                "answer": answer_metrics,
-            })
-
         except Exception as e:
-            results.append({
-                "question": question,
-                "video_id": video_id,
-                "error": str(e),
-            })
+            results.append(
+                {
+                    "question": question,
+                    "video_id": video_id,
+                    "error": str(e),
+                }
+            )
 
     return results
 
@@ -322,10 +326,10 @@ def print_report(results: list[dict], aggregate: dict) -> None:
         print(f"  {aggregate['error']}")
     else:
         print(f"  Questions:       {aggregate['num_questions']} ({aggregate['num_valid']} valid)")
-        print(f"  Retrieval:")
+        print("  Retrieval:")
         print(f"    Mean Hit Rate: {aggregate['mean_hit_rate']:.2%}")
         print(f"    Mean MRR:      {aggregate['mean_mrr']:.4f}")
-        print(f"  Answer Quality:")
+        print("  Answer Quality:")
         print(f"    Mean ROUGE-L:  {aggregate['mean_rougeL_f1']:.2%}")
         print(f"    Mean KW Cov:   {aggregate['mean_keyword_coverage']:.2%}")
         print(f"    Refusal Rate:  {aggregate['refusal_rate']:.2%}")
@@ -335,8 +339,9 @@ def print_report(results: list[dict], aggregate: dict) -> None:
 def main() -> None:
     parser = argparse.ArgumentParser(description="Evaluate RAG Q&A quality.")
     parser.add_argument("--eval-set", type=Path, required=True, help="Evaluation Q&A set JSON.")
-    parser.add_argument("--data-dir", type=str, default=str(Path.home() / ".notetaker"),
-                        help="Base data directory.")
+    parser.add_argument(
+        "--data-dir", type=str, default=str(Path.home() / ".notetaker"), help="Base data directory."
+    )
     parser.add_argument("--chroma-dir", type=str, help="ChromaDB directory.")
     parser.add_argument("--model", default="llama3.1:8b", help="Ollama model.")
     parser.add_argument("--output", type=Path, help="Save results as JSON.")

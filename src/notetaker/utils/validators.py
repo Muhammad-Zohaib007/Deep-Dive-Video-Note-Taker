@@ -33,6 +33,7 @@ def check_ollama(base_url: str = "http://localhost:11434") -> bool:
     """Check if Ollama server is running."""
     try:
         import httpx
+
         resp = httpx.get(f"{base_url}/api/tags", timeout=5.0)
         return resp.status_code == 200
     except Exception:
@@ -54,8 +55,10 @@ def get_video_duration(file_path: str | Path) -> float:
     file_path = str(file_path)
     cmd = [
         "ffprobe",
-        "-v", "quiet",
-        "-print_format", "json",
+        "-v",
+        "quiet",
+        "-print_format",
+        "json",
         "-show_format",
         file_path,
     ]
@@ -101,8 +104,7 @@ def validate_file_format(file_path: str | Path) -> None:
     ext = Path(file_path).suffix.lower()
     if ext not in SUPPORTED_EXTENSIONS:
         raise ValueError(
-            f"Unsupported file format '{ext}'. "
-            f"Supported: {', '.join(sorted(SUPPORTED_EXTENSIONS))}"
+            f"Unsupported file format '{ext}'. Supported: {', '.join(sorted(SUPPORTED_EXTENSIONS))}"
         )
 
 
@@ -126,15 +128,17 @@ def get_system_ram_gb() -> float:
     """Get total system RAM in GB."""
     try:
         import psutil
-        return psutil.virtual_memory().total / (1024 ** 3)
+
+        return psutil.virtual_memory().total / (1024**3)
     except ImportError:
         # Fallback: try reading from OS
         try:
             import os
+
             if hasattr(os, "sysconf"):
                 pages = os.sysconf("SC_PHYS_PAGES")
                 page_size = os.sysconf("SC_PAGE_SIZE")
-                return (pages * page_size) / (1024 ** 3)
+                return (pages * page_size) / (1024**3)
         except Exception:
             pass
     return 0.0
@@ -155,10 +159,7 @@ def run_preflight_checks(ollama_url: str = "http://localhost:11434") -> list[str
         issues.append("ffprobe not found. It should be included with FFmpeg.")
 
     if not check_ollama(ollama_url):
-        issues.append(
-            f"Ollama not responding at {ollama_url}. "
-            "Start it with: ollama serve"
-        )
+        issues.append(f"Ollama not responding at {ollama_url}. Start it with: ollama serve")
 
     ram_gb = get_system_ram_gb()
     if 0 < ram_gb < 8:

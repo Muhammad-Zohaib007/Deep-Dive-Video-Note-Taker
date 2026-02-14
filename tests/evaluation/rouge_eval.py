@@ -138,7 +138,7 @@ def evaluate_directory(
     matched = set(ref_files.keys()) & set(hyp_files.keys())
 
     if not matched:
-        print(f"Warning: No matching files found.")
+        print("Warning: No matching files found.")
         return results
 
     for name in sorted(matched):

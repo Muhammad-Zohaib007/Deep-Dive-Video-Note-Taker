@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -15,7 +14,6 @@ from notetaker.pipeline.transcribe import (
     save_transcript,
     transcribe_audio,
 )
-
 
 # ---------------------------------------------------------------------------
 # _format_timestamp
@@ -125,9 +123,7 @@ class TestLoadTranscript:
         loaded = load_transcript(out)
         assert loaded.full_text() == sample_transcript.full_text()
 
-    def test_load_from_sample_transcript_fixture(
-        self, tmp_data_dir, sample_transcript
-    ):
+    def test_load_from_sample_transcript_fixture(self, tmp_data_dir, sample_transcript):
         """Load a transcript written from the sample_transcript fixture and
         verify every top-level field matches."""
         out = tmp_data_dir / "fixture_transcript.json"
@@ -333,8 +329,8 @@ class TestTranscribeAudioEmptySegments:
 
         fake_segments = [
             (0, 500, "Hello world"),
-            (500, 800, "   "),        # whitespace-only -> should be skipped
-            (800, 1000, ""),           # empty -> should be skipped
+            (500, 800, "   "),  # whitespace-only -> should be skipped
+            (800, 1000, ""),  # empty -> should be skipped
             (1000, 1500, "Goodbye"),
         ]
 

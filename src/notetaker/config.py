@@ -29,6 +29,7 @@ def _get_default_config_path() -> Path:
     # Second: try importlib.resources (works when installed as package)
     try:
         import importlib.resources as pkg_resources
+
         # Try the top-level package directory
         ref = pkg_resources.files("notetaker").joinpath("../../config.default.yaml")
         if hasattr(ref, "_path") and Path(str(ref)).exists():

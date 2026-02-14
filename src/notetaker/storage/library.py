@@ -48,14 +48,16 @@ class VideoLibrary:
                 with open(metadata_path, "r", encoding="utf-8") as f:
                     meta = json.load(f)
 
-                summaries.append(VideoSummary(
-                    video_id=meta.get("video_id", video_dir.name),
-                    title=meta.get("title", "Untitled"),
-                    source_url=meta.get("source_url"),
-                    duration_seconds=meta.get("duration_seconds", 0),
-                    processing_date=meta.get("processing_date", ""),
-                    has_notes=(video_dir / "notes.json").exists(),
-                ))
+                summaries.append(
+                    VideoSummary(
+                        video_id=meta.get("video_id", video_dir.name),
+                        title=meta.get("title", "Untitled"),
+                        source_url=meta.get("source_url"),
+                        duration_seconds=meta.get("duration_seconds", 0),
+                        processing_date=meta.get("processing_date", ""),
+                        has_notes=(video_dir / "notes.json").exists(),
+                    )
+                )
             except Exception as e:
                 logger.warning(f"Failed to read metadata for {video_dir.name}: {e}")
 
@@ -97,6 +99,7 @@ class VideoLibrary:
             True if deleted, False if not found.
         """
         import shutil
+
         video_dir = self.videos_dir / video_id
         if not video_dir.exists():
             return False
@@ -104,15 +107,15 @@ class VideoLibrary:
         # Clean up chunks from ChromaDB
         try:
             import chromadb
+
             from notetaker.config import get_config
+
             config = get_config()
             chroma_dir = config.get(
                 "chroma.persist_directory",
                 str(self.data_dir / "chroma"),
             )
-            collection_name = config.get(
-                "chroma.collection_name", "notetaker_default"
-            )
+            collection_name = config.get("chroma.collection_name", "notetaker_default")
             client = chromadb.PersistentClient(path=chroma_dir)
             collection = client.get_or_create_collection(
                 name=collection_name,

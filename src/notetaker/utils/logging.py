@@ -8,7 +8,6 @@ from logging.handlers import RotatingFileHandler
 from pathlib import Path
 from typing import Optional
 
-
 _LOGGER_NAME = "notetaker"
 _initialized = False
 

@@ -23,8 +23,10 @@ def _get_embedding_model(model_name: str):
     """Get or create a cached SentenceTransformer instance."""
     if model_name not in _embedding_model_cache:
         from sentence_transformers import SentenceTransformer
+
         _embedding_model_cache[model_name] = SentenceTransformer(model_name)
     return _embedding_model_cache[model_name]
+
 
 # RAG system prompt from spec Section 4.6.2
 RAG_SYSTEM_PROMPT = """You are a helpful assistant answering questions about a video. \
@@ -65,13 +67,15 @@ def _format_sources(results: dict[str, Any]) -> list[dict]:
     distances = results.get("distances", [[]])[0]
 
     for doc, meta, dist in zip(documents, metadatas, distances):
-        sources.append({
-            "text": doc[:200],
-            "start_time": meta.get("start_time", 0),
-            "end_time": meta.get("end_time", 0),
-            "video_id": meta.get("video_id", ""),
-            "similarity": round(1 - dist, 4),  # Convert distance to similarity
-        })
+        sources.append(
+            {
+                "text": doc[:200],
+                "start_time": meta.get("start_time", 0),
+                "end_time": meta.get("end_time", 0),
+                "video_id": meta.get("video_id", ""),
+                "similarity": round(1 - dist, 4),  # Convert distance to similarity
+            }
+        )
 
     return sources
 

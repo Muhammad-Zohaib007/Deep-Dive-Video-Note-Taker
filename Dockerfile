@@ -18,6 +18,7 @@ WORKDIR /app
 
 # Copy dependency files first for layer caching
 COPY pyproject.toml poetry.lock ./
+COPY README.md ./
 
 # Configure Poetry: no virtualenv inside container
 RUN poetry config virtualenvs.create false

@@ -54,8 +54,6 @@ scripts/
 *.md
 !README.md
 
-# OpenCode
-.opencode/
 
 # Environment files
 .env

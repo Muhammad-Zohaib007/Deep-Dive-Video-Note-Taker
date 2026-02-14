@@ -61,5 +61,4 @@ tests/fixtures/*.mp4
 # Spec documents
 *.docx
 
-# OpenCode
-.opencode/
+

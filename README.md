@@ -1,195 +1,215 @@
-# Deep-Dive Video Note Taker (Lite)
+# 🚀 Deep-Dive Video Note Taker
+`LLM + RAG`
+<div align="center">
 
-Zero-cost, CPU-only AI system that converts short-form video content (up to 15 minutes) into structured notes, key timestamps, and action items.
+<h3>🎥 Local Video → Structured Notes + Timestamps + Action Items + RAG Q&A</h3>
 
-## Features
+<p>
+<strong>CPU-only • Privacy-First • Offline-Capable • LLM Powered</strong>
+</p>
 
-- **Audio extraction** from YouTube URLs or local video files (yt-dlp + FFmpeg)
-- **Transcription** via whisper.cpp (pywhispercpp) -- runs entirely on CPU
-- **Chunking & embedding** with sentence-transformers (`all-MiniLM-L6-v2`, 384-dim)
-- **Vector storage** in ChromaDB (embedded, no server required)
-- **Structured note generation** via Ollama (default: Llama 3.1 8B)
-- **RAG-based Q&A** over transcripts with source citations
-- **Export** to Markdown, JSON, Obsidian (YAML frontmatter + callout blocks), or Notion (block JSON + API push)
-- **Batch processing** -- process multiple videos in a single command
-- **Custom prompt templates** -- supply your own system prompt for LLM generation
-- **Performance profiling** -- per-stage timing and memory reporting
-- **Resume mode** -- restart failed pipelines from the last completed stage
-- **Three interfaces**: CLI, REST API, and web UI
-- **Docker support** with Docker Compose (healthchecks, Ollama sidecar)
-- **CI/CD pipeline** via GitHub Actions (lint, test matrix, Docker build)
-- **Environment variable overrides** for headless / container deployments
+<p>
+<img src="https://img.shields.io/badge/python-3.10%2B-blue" />
+<img src="https://img.shields.io/badge/license-MIT-green" />
+<img src="https://img.shields.io/badge/LLM-Ollama-orange" />
+<img src="https://img.shields.io/badge/RAG-ChromaDB-purple" />
+<img src="https://img.shields.io/badge/STT-whisper.cpp-red" />
+</p>
 
-## Prerequisites
+<p><em>Convert long YouTube videos, lectures, and meetings into structured knowledge — locally.</em></p>
 
-- Python 3.10+
-- FFmpeg (on PATH)
-- Node.js (required by yt-dlp for some extractors)
-- [Ollama](https://ollama.ai) running locally with a pulled model (default: `llama3.1:8b`)
+</div>
 
-## Quick Start
+---
+
+<hr>
+
+## 🔎 What Is This?
+
+**Deep-Dive Video Note Taker (Lite)** is a local AI system that converts long videos into:
+
+<ul>
+<li>📌 Structured notes</li>
+<li>⏱️ Key timestamps</li>
+<li>✅ Action items</li>
+<li>🧠 RAG-based Q&A with citations</li>
+</ul>
+
+No cloud upload required. Everything runs locally using:
+
+* whisper.cpp
+* sentence-transformers
+* ChromaDB
+* Ollama (LLM)
+
+---
+
+## 🧠 Architecture Overview
+
+```mermaid
+flowchart LR
+    A[Video Input] --> B[Audio Extraction]
+    B --> C[Speech-to-Text]
+    C --> D[Chunk + Embed]
+    D --> E[Vector DB]
+    E --> F[LLM Notes Generator]
+    E --> G[RAG Q&A]
+```
+
+---
+
+## ✨ Core Features
+
+<div style="background:#f6f8fa;padding:15px;border-radius:8px">
+
+### 🎥 Input
+
+* YouTube URL
+* Local video file
+* Batch processing
+
+### 📝 Output
+
+* Structured summary
+* Multi-level notes
+* Timestamped highlights
+* Action item extraction
+* Export to Markdown / JSON / Obsidian / Notion
+
+### 🧠 Intelligence Layer
+
+* Semantic chunking
+* Embedding-based retrieval
+* RAG pipeline
+* Citation-backed answers
+
+</div>
+
+---
+
+## ⚡ Quick Start
+
+### 1️⃣ Install Dependencies
 
 ```bash
-# Install dependencies
 pip install poetry
 poetry install
+```
 
-# Process a video
+### 2️⃣ Install Ollama Model
+
+```bash
+ollama pull llama3.1:8b
+```
+
+### 3️⃣ Process a Video
+
+```bash
 poetry run notetaker process "https://www.youtube.com/watch?v=VIDEO_ID"
+```
 
-# Process multiple videos at once
-poetry run notetaker batch "https://youtu.be/A" "https://youtu.be/B"
+### 4️⃣ Ask Questions (RAG)
 
-# Process from a file (one URL per line)
-poetry run notetaker batch --file urls.txt
+```bash
+poetry run notetaker query VIDEO_ID "What were the main insights?"
+```
 
-# Ask a question about a processed video
-poetry run notetaker query VIDEO_ID "What were the main takeaways?"
+---
 
-# List all processed videos
-poetry run notetaker list
+## 🌐 Web UI + REST API
 
-# Start the web UI
+Start server:
+
+```bash
 poetry run notetaker serve
-# Then open http://localhost:8000 in your browser
 ```
 
-## CLI Commands
+Open:
 
-| Command   | Description                                           |
-|-----------|-------------------------------------------------------|
-| `process` | Download, transcribe, and generate notes              |
-| `batch`   | Process multiple videos (URLs as args or `--file`)    |
-| `query`   | Ask a question about a processed video (RAG)          |
-| `list`    | List all videos in the library                        |
-| `serve`   | Start the FastAPI web server                          |
-| `config`  | Show current configuration                            |
+* Web UI → [http://localhost:8000](http://localhost:8000)
+* Health → [http://localhost:8000/health](http://localhost:8000/health)
 
-### Process options
+### API Endpoints
 
-| Flag                     | Description                                  |
-|--------------------------|----------------------------------------------|
-| `--whisper-model`        | Whisper model size (`tiny/base/small/medium`) |
-| `--ollama-model`         | Ollama model name                            |
-| `--format`               | Output format (`json/markdown/obsidian/notion`) |
-| `--prompt-template`      | Path to a custom system prompt text file     |
-| `--resume`               | Resume from the last completed stage         |
-| `--profile`              | Print per-stage timing and memory report     |
-
-## REST API
-
-Start the server with `notetaker serve`, then use:
-
-| Method | Endpoint                     | Description                             |
-|--------|------------------------------|-----------------------------------------|
-| POST   | `/api/process`               | Submit a video for processing           |
-| POST   | `/api/process/upload`        | Upload a video file for processing      |
-| GET    | `/api/status/{job_id}`       | Check processing job status             |
-| GET    | `/api/notes/{video_id}`      | Get generated notes                     |
-| GET    | `/api/transcript/{video_id}` | Get transcript                          |
-| POST   | `/api/query/{video_id}`      | Ask a question (RAG Q&A)                |
-| GET    | `/api/library`               | List all processed videos               |
-| GET    | `/api/export/{video_id}`     | Export notes (`?format=json\|markdown\|obsidian\|notion`) |
-| DELETE | `/api/video/{video_id}`      | Delete a video from the library         |
-
-## Export Formats
-
-### Markdown
-Standard markdown with headings, bullet points, and a timestamp table.
-
-### JSON
-Raw JSON matching the `GeneratedOutput` schema (structured_notes, timestamps, action_items).
-
-### Obsidian
-Markdown with YAML frontmatter (tags, aliases, date), callout blocks (`> [!note]`, `> [!tip]`), and internal link formatting compatible with Obsidian vaults.
-
-### Notion
-JSON payload containing `properties` (page-level metadata) and `children` (block array) ready for import via the Notion API. Can also be downloaded as a `.json` file for manual import.
-
-## Custom Prompt Templates
-
-Create a plain text file with your custom system prompt and pass it via CLI:
-
-```bash
-poetry run notetaker process "URL" --prompt-template ~/my_prompt.txt
+```http
+POST   /api/process
+POST   /api/process/upload
+GET    /api/status/{job_id}
+GET    /api/notes/{video_id}
+GET    /api/transcript/{video_id}
+POST   /api/query/{video_id}
+GET    /api/library
+GET    /api/export/{video_id}?format=json|markdown|obsidian|notion
+DELETE /api/video/{video_id}
 ```
 
-The file replaces the default system prompt sent to the LLM. If the file is missing or empty, the default prompt is used as a fallback.
+---
 
-## Batch Processing
+## 📦 Tech Stack
 
-Process multiple videos in one command:
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px">
 
-```bash
-# From arguments
-poetry run notetaker batch "https://youtu.be/A" "https://youtu.be/B" "https://youtu.be/C"
+<div style="background:#f0f0f0;padding:10px;border-radius:6px">
+<strong>Speech-to-Text</strong><br>
+whisper.cpp
+</div>
 
-# From a file (one URL per line, # comments and blank lines ignored)
-poetry run notetaker batch --file urls.txt
+<div style="background:#f0f0f0;padding:10px;border-radius:6px">
+<strong>Embeddings</strong><br>
+sentence-transformers
+</div>
+
+<div style="background:#f0f0f0;padding:10px;border-radius:6px">
+<strong>Vector DB</strong><br>
+ChromaDB
+</div>
+
+<div style="background:#f0f0f0;padding:10px;border-radius:6px">
+<strong>LLM</strong><br>
+Ollama (llama3.1:8b)
+</div>
+
+</div>
+
+---
+
+## ⚙️ Configuration
+
+User config:
+
+```
+~/.notetaker/config.yaml
 ```
 
-A summary table is printed at the end showing success/failure status for each video.
+Environment variables:
 
-## Performance Profiling
-
-Add `--profile` to any `process` or `batch` command to get a per-stage breakdown:
-
-```bash
-poetry run notetaker process "URL" --profile
+```
+NOTETAKER_OLLAMA_BASE_URL
+NOTETAKER_OLLAMA_MODEL
+NOTETAKER_WHISPER_MODEL
+NOTETAKER_DATA_DIR
+NOTETAKER_NOTION_API_KEY
 ```
 
-Reports include wall-clock time, memory usage, and percentage of total time per stage.
+---
 
-## Configuration
+## 📤 Exports
 
-Configuration is stored in `~/.notetaker/config.yaml`. A default template is provided in `config.default.yaml`. Key settings:
+* JSON
+* Markdown
+* Obsidian (YAML + callouts)
+* Notion blocks JSON
 
-```yaml
-whisper:
-  model: small          # tiny, base, small, medium
-  language: en
+---
 
-ollama:
-  model: llama3.1:8b
-  base_url: http://localhost:11434
-
-embedding:
-  model: all-MiniLM-L6-v2
-  chunk_size: 250       # tokens per chunk
-  chunk_overlap: 50     # token overlap between chunks
-
-video:
-  max_duration: 900     # 15 minutes max
-
-prompts:
-  custom_template: null # path to custom system prompt file
-
-notion:
-  api_key: null         # Notion integration token (optional)
-  database_id: null     # Notion database ID (optional)
-
-export:
-  default_format: json  # json, markdown, obsidian, notion
-```
-
-### Environment Variable Overrides
-
-For Docker / CI / headless environments, the following env vars override config values:
-
-| Variable                       | Config path         |
-|--------------------------------|---------------------|
-| `NOTETAKER_OLLAMA_BASE_URL`    | `ollama.base_url`   |
-| `NOTETAKER_OLLAMA_MODEL`       | `ollama.model`      |
-| `NOTETAKER_WHISPER_MODEL`      | `whisper.model`     |
-| `NOTETAKER_DATA_DIR`           | `data_dir`          |
-| `NOTETAKER_NOTION_API_KEY`     | `notion.api_key`    |
-
-## Docker
+## 🐳 Docker
+>>>>>>> 616c1cd67989d249b65f389c41c07adef4738747
 
 ```bash
 docker compose up --build
 ```
 
+<<<<<<< HEAD
 This starts the web server on port 8000 with an Ollama sidecar. Services include healthchecks and dependency ordering. Set `NOTETAKER_OLLAMA_BASE_URL` if Ollama runs on a different host.
 
 ### Docker details
@@ -251,24 +271,26 @@ scripts/            # Setup and evaluation helpers
 ```bash
 poetry run pytest -v
 ```
-
-All tests run with mocked external services (no GPU, Ollama, or network required).
-
-## Evaluation
-
-The `tests/evaluation/` directory contains scripts for measuring:
-
-- **WER** (Word Error Rate) -- transcription accuracy via `jiwer`
-- **ROUGE** -- note summarization quality
-- **BERTScore** -- semantic similarity of generated notes
-- **RAG quality** -- retrieval precision and answer relevance
-
-Run the full evaluation suite:
+Lint:
 
 ```bash
-poetry run python scripts/evaluate.py
+poetry run ruff check .
 ```
 
-## License
+---
+
+## 🤝 Contributing
+
+PRs welcome.
+
+1. Fork
+2. Create branch
+3. Add tests
+4. Open PR
+
+---
+
+## 📄 License
+>>>>>>> 616c1cd67989d249b65f389c41c07adef4738747
 
 MIT

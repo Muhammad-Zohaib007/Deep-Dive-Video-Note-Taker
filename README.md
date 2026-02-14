@@ -232,36 +232,7 @@ Yes — semantic retrieval via ChromaDB.
 * “Summarize the lecture in 5 bullet points”
 * “List action items from 00:20–00:40”
 * “Where was regression discussed?”
-
----
-
-## 🌍 GEO Optimization (Localized Message)
-
-<div style="background:#e6f2ff;padding:12px;border-radius:6px">
-
-<strong>Pakistan / Urdu Audience:</strong><br>
-مقامی اور پرائیویسی دوست ٹول جو ویڈیوز کو اسٹرکچرڈ نوٹس، ٹائم اسٹیمپس اور ایکشن آئٹمز میں تبدیل کرتا ہے۔
-
-</div>
-
----
-
-## 🔎 SEO Keywords
-
-video note taker, speech-to-text, whisper.cpp, local llm, rag system, chromadb, ollama, python ai project, offline transcription tool, youtube notes generator
-
----
-
-## 📈 Growth Strategy (SEO + GEO + AEO)
-
-<ul>
-<li>Add demo GIF under <code>/assets/demo.gif</code></li>
-<li>Add docs folder with PRD.md, system-design.md, evaluation.md</li>
-<li>Add repo topics: video-notes, whisper, rag, ollama, chromadb, local-llm</li>
-<li>Create README.ur.md for Urdu version</li>
-<li>Publish on Product Hunt + Hacker News</li>
-</ul>
-
+* 
 ---
 
 ## 🧪 Development

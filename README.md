@@ -213,7 +213,7 @@ Ollama → [http://localhost:11434](http://localhost:11434)
 
 ---
 
-## ❓ FAQ (AEO Optimized)
+## ❓ FAQ 
 
 ### Does it upload my videos?
 
